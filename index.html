@@ -391,9 +391,37 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 
 @media (max-width:1100px){.stats{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.fg{grid-template-columns:1fr 1fr}.f.w2{grid-column:1/-1}.wrap{padding:18px 16px 60px}}
+
+/* connexion : fond opaque; tant que la session n'est pas confirmée, rien du tracker n'est visible ni atteignable au clavier */
+body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
+#ovLogin{background:var(--page);padding-top:12vh}
+.modal .note.err{color:#F0A79B}
+.modal .note.ok{color:#9BD3B0}
+.modal .btn.sm{padding:5px 9px;font-size:11.5px}
+.modal .btn:disabled{opacity:.55;cursor:default}
+
+/* comptes et accès */
+.acc{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--rock-rule)}
+.acc:first-child{border-top:0;padding-top:4px}
+.acc .who{min-width:0}
+.acc .who b{display:block;color:var(--rock-ink);font-weight:600;font-size:12.5px;overflow-wrap:anywhere}
+.acc .who>span{display:block;font-size:11px;color:var(--rock-ink-3);overflow-wrap:anywhere}
+#acMsg{margin:0 0 4px}
+#acMsg:empty{display:none}
+#ovAcces fieldset{margin-top:8px}
+.acc .me{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--amber-rock-soft);color:var(--amber-rock);font-size:10px;font-weight:700;vertical-align:1px}
+.acc select{background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:5px 7px;font-size:12px}
+.acc .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.acadd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--rock-ink-2)}
+.aclink{margin:10px 0 4px;padding:12px;border:1px solid #6B5527;border-radius:9px;background:var(--rock-2)}
+.aclink label{font-size:11px;color:var(--rock-ink-3)}
+.aclink b{color:var(--rock-ink)}
+.aclink input{width:100%;margin-top:6px;background:var(--rock);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:7px 9px;font:11.5px var(--f-mono)}
+@media (max-width:640px){.acc{grid-template-columns:minmax(0,1fr) auto}.acc .acts{grid-column:1/-1;justify-content:flex-start}}
 </style>
 </head>
-<body>
+<body class="locked">
 <div class="wrap">
   <header class="top">
     <div>
@@ -406,6 +434,7 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
       <button class="btn" id="btnCopy">Copier les données (JSON)</button>
       <button class="btn" id="btnImport">Importer un fichier</button>
       <input type="file" id="fileImport" accept="application/json,.json" hidden>
+      <button class="btn" id="btnAcces" hidden>Comptes et accès</button>
       <button class="btn ghost" id="btnLogout" hidden>Se déconnecter</button>
     </div>
   </header>
@@ -662,14 +691,61 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 <!-- Connexion (obligatoire : les données ne sont lisibles qu'après connexion d'un membre) -->
 <div class="overlay" id="ovLogin" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lgTitle" style="max-width:420px">
-    <form id="lgForm">
-      <div class="mh"><div><h2 id="lgTitle">Connexion</h2><div class="derived">Accès réservé à l'équipe. Demande un compte à Victor.</div></div></div>
+    <form id="lgForm" novalidate>
+      <div class="mh"><div><h2 id="lgTitle">Connexion</h2><div class="derived">Accès réservé à l'équipe. Demande un accès à un administrateur du tracker.</div></div></div>
       <div class="fg" style="grid-template-columns:1fr">
-        <div class="f"><label for="lg-email">Courriel</label><input id="lg-email" type="email" autocomplete="username" required></div>
-        <div class="f"><label for="lg-pass">Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password" required></div>
+        <div class="f"><label for="lg-email">Courriel</label><input id="lg-email" type="email" autocomplete="username" required spellcheck="false"></div>
+        <div class="f"><label for="lg-pass">Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password"></div>
       </div>
       <p class="note" id="lgMsg" role="status" style="min-height:18px"></p>
-      <div class="mf"><span></span><div class="right"><button type="submit" class="btn go" id="lgGo">Se connecter</button></div></div>
+      <div class="mf"><button type="button" class="btn" id="lgLink">Recevoir un lien par courriel</button><div class="right"><button type="submit" class="btn go" id="lgGo">Se connecter</button></div></div>
+      <p class="note">Pas de mot de passe ? Entre ton courriel et demande un lien. Tu pourras ensuite choisir un mot de passe dans « Comptes et accès ».</p>
+    </form>
+  </div>
+</div>
+
+<!-- Comptes et accès : chacun change son mot de passe; les administrateurs gèrent les accès -->
+<div class="overlay" id="ovAcces" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="acTitle" style="max-width:800px">
+    <div class="mh">
+      <div><h2 id="acTitle">Comptes et accès</h2><div class="derived" id="acMe"></div></div>
+      <button type="button" class="x" data-close aria-label="Fermer">×</button>
+    </div>
+    <p class="note" id="acMsg" role="status"></p>
+    <div id="acAdmin" hidden>
+      <form id="acAdd" novalidate>
+        <fieldset><legend>Donner accès</legend>
+          <div class="fg">
+            <div class="f w2"><label for="ac-email">Courriel</label><input id="ac-email" type="email" required autocomplete="off" spellcheck="false"></div>
+            <div class="f"><label for="ac-nom">Nom (facultatif)</label><input id="ac-nom" autocomplete="off"></div>
+            <div class="f"><label for="ac-role">Rôle</label><select id="ac-role"><option value="membre">Membre</option><option value="admin">Administrateur</option></select></div>
+          </div>
+          <div class="acadd">
+            <label class="chk"><input type="checkbox" id="ac-send" checked> Envoyer tout de suite un lien de connexion par courriel</label>
+            <button type="submit" class="btn go" id="acAddGo">Donner accès</button>
+          </div>
+          <p class="note">Membre : voit et modifie les cibles. Administrateur : gère aussi les comptes.</p>
+        </fieldset>
+      </form>
+      <fieldset><legend>Personnes qui ont accès</legend>
+        <div id="acList"></div>
+        <div class="aclink" id="acLinkBox" hidden>
+          <label for="acLinkVal">Lien de connexion pour <b id="acLinkTo"></b></label>
+          <input id="acLinkVal" readonly spellcheck="false">
+          <p class="note">À usage unique, valide 1 heure. Ce lien ouvre une session au nom de cette personne : envoie-le seulement à elle.</p>
+        </div>
+        <p class="note">« Envoyer un lien » part par courriel. « Copier un lien » te le donne pour l'envoyer toi-même (Teams, texto, courriel). Retirer une personne supprime son compte et coupe son accès tout de suite.</p>
+      </fieldset>
+    </div>
+    <form id="acPw" novalidate>
+      <fieldset><legend>Mon mot de passe</legend>
+        <input type="email" id="pw-user" autocomplete="username" hidden>
+        <div class="fg">
+          <div class="f w2"><label for="pw-new">Nouveau mot de passe</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+          <div class="f w2"><label for="pw-confirm">Confirmer</label><input id="pw-confirm" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="acadd"><span class="note" style="margin:0">8 caractères minimum.</span><button type="submit" class="btn" id="pwGo">Changer mon mot de passe</button></div>
+      </fieldset>
     </form>
   </div>
 </div>
@@ -1112,42 +1188,82 @@ function makeDb(){
     doc:p=>{const i=p.lastIndexOf("/");return docRef(p.slice(0,i),p.slice(i+1));},
   };
 }
+const PAGE_URL=location.origin+location.pathname;   // adresse où ramènent les liens de connexion
+let ME={email:"",role:null};
+const lock=on=>document.body.classList.toggle("locked",on);
+// un lien de connexion expiré ou déjà utilisé revient avec #error=…&error_code=…
+const LINK_ERR=(()=>{try{const h=new URLSearchParams(location.hash.slice(1));return h.get("error_code")||h.get("error")||null;}catch(e){return null;}})();
 async function initDb(){
   if(!window.supabase||/VOTRE-/.test(SB_URL+SB_KEY)){
+    lock(false);
     setDbState("err","Base non configurée");
     showBanner("err","<b>La base n'est pas configurée.</b> Remplis SB_URL et SB_KEY dans index.html (bloc « base de données : Supabase »).");
     renderAll();return;
   }
-  sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  // flux « implicit » : un lien envoyé par un administrateur fonctionne dans n'importe quel navigateur
+  sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"implicit"}});
   let session=null;
   try{({data:{session}}=await sb.auth.getSession());}catch(e){}
-  if(session)startDb(session);else showLogin();
+  if(/(^|[#&])(access_token|error|error_code)=/.test(location.hash))try{history.replaceState(null,"",location.pathname+location.search);}catch(e){}
+  // session expirée ou fermée dans un autre onglet : on revient à l'écran de connexion
+  sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&!document.body.classList.contains("locked"))location.reload();});
+  if(session)startDb(session);
+  else showLogin(LINK_ERR?"Ce lien de connexion a expiré ou a déjà servi. Demande un nouveau lien ci-dessous.":"");
 }
-function showLogin(){
-  setDbState("err","Connexion requise");$("#btnLogout").hidden=true;
+function showLogin(msg){
+  lock(true);
+  setDbState("err","Connexion requise");$("#btnLogout").hidden=true;$("#btnAcces").hidden=true;
+  $("#lgMsg").textContent=msg||"";
   $("#ovLogin").hidden=false;setTimeout(()=>$("#lg-email").focus(),0);
+}
+function authMsg(error){
+  const c=String(error&&error.code||""),m=String(error&&error.message||error||"");
+  if(c==="invalid_credentials"||/invalid login/i.test(m))return "Courriel ou mot de passe invalide.";
+  if(c==="email_not_confirmed")return "Ce compte n'est pas encore activé : demande un lien de connexion.";
+  if(c==="otp_disabled"||c==="signup_disabled"||c==="user_not_found"||/signups not allowed/i.test(m))return "Ce courriel n'a pas de compte. Demande un accès à un administrateur du tracker.";
+  if(/rate_limit/.test(c)||(error&&error.status===429))return "Trop de demandes : attends quelques minutes avant de redemander un lien.";
+  if(c==="email_address_not_authorized")return "Le serveur courriel du tracker n'envoie pas encore à cette adresse. Demande à un administrateur de te copier un lien.";
+  return "Connexion impossible : "+m;
 }
 $("#lgForm").addEventListener("submit",async e=>{
   e.preventDefault();
   if(!sb)return;
+  const email=str($("#lg-email").value),pass=$("#lg-pass").value;
+  if(!email||!$("#lg-email").checkValidity()){$("#lgMsg").textContent="Entre ton courriel.";$("#lg-email").focus();return;}
+  if(!pass){$("#lgMsg").textContent="Entre ton mot de passe, ou demande un lien de connexion par courriel.";$("#lg-pass").focus();return;}
   const btn=$("#lgGo");btn.disabled=true;$("#lgMsg").textContent="Connexion…";
-  const {data,error}=await sb.auth.signInWithPassword({email:str($("#lg-email").value),password:$("#lg-pass").value});
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false;
-  if(error){$("#lgMsg").textContent=/invalid/i.test(error.message)?"Courriel ou mot de passe invalide.":"Connexion impossible : "+error.message;return;}
-  $("#lg-pass").value="";$("#lgMsg").textContent="";$("#ovLogin").hidden=true;
+  if(error){$("#lgMsg").textContent=authMsg(error);return;}
+  $("#lg-pass").value="";$("#lgMsg").textContent="";
   startDb(data.session);
 });
-$("#btnLogout").addEventListener("click",async()=>{try{await sb.auth.signOut();}catch(e){}location.reload();});
+$("#lgLink").addEventListener("click",async()=>{
+  if(!sb)return;
+  const email=str($("#lg-email").value);
+  if(!email||!$("#lg-email").checkValidity()){$("#lgMsg").textContent="Entre ton courriel, puis clique sur « Recevoir un lien par courriel ».";$("#lg-email").focus();return;}
+  const btn=$("#lgLink");btn.disabled=true;$("#lgMsg").textContent="Envoi du lien…";
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:PAGE_URL}});
+  btn.disabled=false;
+  $("#lgMsg").textContent=error?authMsg(error):"Lien envoyé à "+email+". Il sert une fois et expire dans 1 heure.";
+});
+$("#btnLogout").addEventListener("click",async()=>{lock(true);try{await sb.auth.signOut();}catch(e){}location.reload();});
 async function startDb(session){
   const email=(session&&session.user&&session.user.email)||"";
-  $("#btnLogout").hidden=false;$("#btnLogout").title="Connecté : "+email;
-  let membre=false;
-  try{const {data,error}=await sb.rpc("est_membre");membre=!error&&data===true;}catch(e){}
+  let membre=null;
+  try{const {data,error}=await sb.rpc("est_membre");membre=error?null:data===true;}catch(e){}
+  if(membre===null){showLogin("La base ne répond pas pour l'instant. Recharge la page dans un moment.");return;}
   if(!membre){
-    setDbState("err","Accès refusé");
-    showBanner("err","<b>Ce compte ("+esc(email)+") n'a pas accès aux données.</b> Ajoute ce courriel à la table « membres » dans Supabase, puis recharge la page.");
-    renderAll();return;
+    try{await sb.auth.signOut();}catch(e){}
+    showLogin("Le compte "+email+" n'a pas accès aux données. Demande un accès à un administrateur du tracker.");
+    return;
   }
+  let role=null;
+  try{const {data,error}=await sb.rpc("mon_role");if(!error&&(data==="admin"||data==="membre"))role=data;}catch(e){}
+  ME={email,role};
+  $("#ovLogin").hidden=true;lock(false);
+  $("#btnLogout").hidden=false;$("#btnLogout").title="Connecté : "+email;
+  $("#btnAcces").hidden=false;
   db=makeDb();
   const timer=setTimeout(()=>{if(!dbReady)setDbState("err","La base ne répond pas encore. Les données affichées peuvent être en retard.");},10000);
   db.collection("cibles").onSnapshot(snap=>{
@@ -2049,7 +2165,7 @@ function setTab(t,push){
   $$(".sheet-scroll").forEach(updateFades);
 }
 $$(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab,true)));
-window.addEventListener("hashchange",()=>setTab(location.hash.slice(1),false));
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(TABS.includes(h))setTab(h,false);});
 let rsz=null;window.addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(TAB==="entonnoir")renderFunnel();$$(".sheet-scroll").forEach(updateFades);},150);});
 
 /* ---------- fiche (modal foncé) ---------- */
@@ -2115,6 +2231,112 @@ let lastFocus=null;
 function openOverlay(o){lastFocus=document.activeElement;o.hidden=false;const f=o.querySelector("input,select,textarea,button");f&&f.focus();}
 function closeOverlay(o){o.hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
 $$(".overlay").forEach(o=>{if(o.id==="ovLogin")return;o.addEventListener("click",e=>{if(e.target===o||e.target.closest("[data-close]"))closeOverlay(o);});});
+
+/* ---------- comptes et accès ----------
+   La gestion des comptes passe par la fonction serveur « acces » (supabase/functions/acces) :
+   elle vérifie que la personne connectée est administratrice et garde la clé d'administration côté serveur. */
+const ROLE_LBL={admin:"Administrateur",membre:"Membre"};
+let ACC=[];
+async function accCall(action,body){
+  let res;
+  try{res=await sb.functions.invoke("acces",{body:{action,...(body||{})}});}
+  catch(e){throw new Error("La gestion des comptes ne répond pas. Réessaie dans un moment.");}
+  const {data,error}=res;
+  if(error){
+    let m="";try{const j=await error.context.json();m=j&&j.erreur;}catch(e){}
+    if(!m&&error.context&&error.context.status===404)m="La gestion des comptes n'est pas encore installée sur Supabase (fonction « acces »).";
+    throw new Error(m||"La gestion des comptes ne répond pas. Réessaie dans un moment.");
+  }
+  return data||{};
+}
+function accMsg(t,kind){const el=$("#acMsg");el.textContent=t||"";el.className="note"+(kind?" "+kind:"");}
+const fmtJour=s=>{if(!s)return "";const d=new Date(s);return isNaN(d)?"":d.toLocaleDateString("fr-CA",{day:"numeric",month:"short",year:"numeric"});};
+function renderAcc(){
+  const box=$("#acList");
+  if(!ACC.length){box.innerHTML='<p class="note">Personne n\'a accès pour l\'instant.</p>';return;}
+  const moi=ME.email.toLowerCase();
+  box.innerHTML=ACC.map(a=>{
+    const me=a.email===moi;
+    const st=!a.user_id?"compte pas encore créé":a.derniere_connexion?"dernière connexion le "+fmtJour(a.derniere_connexion):"jamais connecté";
+    return `<div class="acc" data-email="${esc(a.email)}">
+      <div class="who"><b>${esc(a.nom||a.email)}${me?'<span class="me">toi</span>':""}</b><span>${a.nom?esc(a.email)+" · ":""}${esc(st)}</span></div>
+      <select data-role aria-label="Rôle de ${esc(a.email)}"${me?' disabled title="Un autre administrateur doit changer ton rôle."':""}>${Object.entries(ROLE_LBL).map(([k,l])=>`<option value="${k}"${a.role===k?" selected":""}>${l}</option>`).join("")}</select>
+      <div class="acts"><button type="button" class="btn sm" data-act="envoyer">Envoyer un lien</button><button type="button" class="btn sm" data-act="lien">Copier un lien</button>${me?"":'<button type="button" class="btn sm danger" data-act="retirer">Retirer</button>'}</div>
+    </div>`;
+  }).join("");
+}
+async function loadAcc(){
+  if(!ACC.length)$("#acList").innerHTML='<p class="note">Chargement…</p>';
+  try{const r=await accCall("lister");ACC=Array.isArray(r.comptes)?r.comptes:[];renderAcc();}
+  catch(e){$("#acList").innerHTML="";accMsg(e.message,"err");}
+}
+async function showLinkBox(email,lien){
+  $("#acLinkTo").textContent=email;$("#acLinkVal").value=lien;$("#acLinkBox").hidden=false;
+  let ok=false;try{await navigator.clipboard.writeText(lien);ok=true;}catch(e){}
+  if(ok)accMsg("Lien copié. Colle-le dans un message à "+email+".","ok");
+  else{accMsg("Copie automatique refusée : sélectionne le lien ci-dessous et copie-le.","err");$("#acLinkVal").focus();$("#acLinkVal").select();}
+}
+$("#btnAcces").addEventListener("click",()=>{
+  const admin=ME.role==="admin";
+  $("#acMe").textContent="Connecté : "+ME.email+(ME.role?" · "+ROLE_LBL[ME.role]:"");
+  $("#acAdmin").hidden=!admin;$("#acLinkBox").hidden=true;$("#acLinkVal").value="";accMsg("");
+  $("#acPw").reset();$("#pw-user").value=ME.email;
+  openOverlay($("#ovAcces"));
+  if(admin)loadAcc();
+});
+$("#acAdd").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const email=str($("#ac-email").value).toLowerCase();
+  if(!email||!$("#ac-email").checkValidity()){accMsg("Entre un courriel valide.","err");$("#ac-email").focus();return;}
+  const btn=$("#acAddGo");btn.disabled=true;accMsg("Ajout de "+email+"…");
+  try{
+    const r=await accCall("ajouter",{email,nom:str($("#ac-nom").value),role:$("#ac-role").value,envoyer:$("#ac-send").checked});
+    $("#acAdd").reset();$("#ac-send").checked=true;
+    accMsg(r.message||"Accès donné à "+email+".",r.avertissement?"err":"ok");
+    await loadAcc();
+  }catch(err){accMsg(err.message,"err");}
+  btn.disabled=false;
+});
+$("#acList").addEventListener("change",async e=>{
+  const s=e.target.closest("[data-role]");if(!s)return;
+  const email=s.closest(".acc").dataset.email,a=ACC.find(x=>x.email===email),prev=a?a.role:"membre";
+  s.disabled=true;accMsg("Changement de rôle…");
+  try{await accCall("role",{email,role:s.value});if(a)a.role=s.value;accMsg(email+" : "+ROLE_LBL[s.value].toLowerCase()+".","ok");}
+  catch(err){s.value=prev;accMsg(err.message,"err");}
+  s.disabled=false;
+});
+$("#acList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]");if(!b||b.disabled)return;
+  const email=b.closest(".acc").dataset.email,act=b.dataset.act;
+  if(act==="retirer"&&!b.classList.contains("armed")){
+    b.classList.add("armed");b.textContent="Confirmer le retrait";
+    setTimeout(()=>{if(b.isConnected&&!b.disabled){b.classList.remove("armed");b.textContent="Retirer";}},4000);return;
+  }
+  const lbl={envoyer:"Envoyer un lien",lien:"Copier un lien",retirer:"Retirer"}[act];
+  b.disabled=true;accMsg(act==="envoyer"?"Envoi du lien à "+email+"…":act==="lien"?"Création du lien…":"Retrait de l'accès…");
+  try{
+    const r=await accCall(act,{email});
+    if(act==="lien")await showLinkBox(email,r.lien);
+    else if(act==="envoyer")accMsg("Lien envoyé à "+email+". Il sert une fois et expire dans 1 heure.","ok");
+    else{accMsg(r.message||"Accès retiré à "+email+" : son compte est supprimé.",r.message?"err":"ok");$("#acLinkBox").hidden=true;await loadAcc();}
+  }catch(err){accMsg(err.message,"err");}
+  if(b.isConnected){b.disabled=false;b.classList.remove("armed");b.textContent=lbl;}
+});
+$("#acPw").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const a=$("#pw-new").value,b=$("#pw-confirm").value;
+  if(a.length<8){accMsg("Le mot de passe doit avoir au moins 8 caractères.","err");$("#pw-new").focus();return;}
+  if(a!==b){accMsg("Les deux mots de passe ne correspondent pas.","err");$("#pw-confirm").focus();return;}
+  const btn=$("#pwGo");btn.disabled=true;accMsg("Enregistrement du mot de passe…");
+  let error=null;try{({error}=await sb.auth.updateUser({password:a}));}catch(err){error=err;}
+  btn.disabled=false;
+  if(error){
+    const c=String(error.code||"");
+    accMsg(c==="same_password"?"C'est déjà ton mot de passe.":c==="weak_password"?"Mot de passe trop faible : allonge-le.":c==="reauthentication_needed"?"Pour changer ton mot de passe, déconnecte-toi, reconnecte-toi, puis réessaie.":"Mot de passe non changé : "+(error.message||error),"err");
+    return;
+  }
+  $("#acPw").reset();$("#pw-user").value=ME.email;accMsg("Mot de passe changé. Il servira à ta prochaine connexion.","ok");
+});
 
 /* ---------- thèse ---------- */
 const TH=["caMin","caMax","ebMin","ebMax","addonCaMin","addonEbMin","multMax"];
