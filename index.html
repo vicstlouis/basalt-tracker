@@ -908,6 +908,9 @@ function pvOf(it,k){const p=it.prov&&it.prov[k];if(p==="verifie"||p==="estime")r
 function benchOf(it){const id=it.bench||VERT_BENCH[it.verticale]||"mfg-general";return BENCH.find(b=>b.id===id)||BENCH.find(b=>b.id==="mfg-general")||BENCH[0]||null;}
 /* Valeurs centrales : un chiffre vérifié l'emporte; sinon employés × revenu par employé de l'industrie,
    moyenné avec le CA du pipeline quand les deux existent. BAIIA = CA × marge centrale. VE = BAIIA × multiple central. */
+/* Arrondi à 6 décimales : une valeur posée sur un seuil (3,00 M$) se compare de la même façon partout, y compris dans un tableur. */
+const r6=x=>Math.round(x*1e6)/1e6;
+const r6s=s=>s?{...s,lo:r6(s.lo),mid:r6(s.mid),hi:r6(s.hi)}:s;
 function sizeOf(it){
   const b=benchOf(it),out={b,ca:null,eb:null,ve:null,emp:null};
   const emp=rng(it.employes);
@@ -919,15 +922,17 @@ function sizeOf(it){
     if(emp&&b){const rpe=rpeOf(b,it.province)/1000;c.push({lo:emp.lo*rpe*(1-BENCH_DISP),hi:emp.hi*rpe*(1+BENCH_DISP),mid:emp.mid*rpe,how:"emp"});}
     if(caIn)c.push({...caIn,how:"pipe"});
     if(c.length){
-      const mids=c.map(x=>x.mid);
+      const mids=c.map(x=>r6(x.mid));
       out.ca={lo:Math.min(...c.map(x=>x.lo)),hi:Math.max(...c.map(x=>x.hi)),mid:mids.reduce((s,x)=>s+x,0)/c.length,p:"e",how:c.map(x=>x.how).join("+"),parts:c,gap:c.length>1?Math.max(...mids)/Math.max(0.01,Math.min(...mids)):1};
     }
   }
+  out.ca=r6s(out.ca);
   const ebIn=rng(it.baiia);
   if(ebIn)out.eb={...ebIn,p:pvOf(it,"baiia")==="verifie"?"v":"e",how:"saisi"};
   /* Fourchette large : CA bas × marge basse jusqu'à CA haut × marge haute, pour ne rien perdre; la valeur centrale garde la marge centrale. */
   else if(out.ca&&b){const mc=margeC(b);out.eb={lo:out.ca.lo*Math.min(b.m[0],mc)/100,hi:out.ca.hi*Math.max(b.m[2],mc)/100,mid:out.ca.mid*mc/100,p:"e",how:"marge"};}
-  if(out.eb&&b&&out.eb.mid>0)out.ve={lo:out.eb.mid*b.x[0],hi:out.eb.mid*b.x[2],mid:out.eb.mid*b.x[1],p:"e"};
+  out.eb=r6s(out.eb);
+  if(out.eb&&b&&out.eb.mid>0)out.ve=r6s({lo:out.eb.mid*b.x[0],hi:out.eb.mid*b.x[2],mid:out.eb.mid*b.x[1],p:"e"});
   return out;
 }
 const dec=n=>String(n).replace(".",",");
@@ -1652,8 +1657,8 @@ const HYP=[
   {k:"ebMinV.Défense",n:"Plancher de BAIIA du noyau : défense et aérospatiale",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
   {k:"ebMinV.Services B2B",n:"Plancher de BAIIA du noyau : services techniques B2B",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
   {k:"ebMinV.Manuf. niche",n:"Plancher de BAIIA du noyau : manufacturier de niche",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
-  {k:"addonCaMin",n:"CA minimum d'un complément",u:"M$",alt:10,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
-  {k:"addonEbMin",n:"BAIIA minimum d'un complément",u:"M$",alt:1,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
+  {k:"addonCaMin",g:"compl",n:"CA minimum d'un complément",u:"M$",alt:10,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
+  {k:"addonEbMin",g:"compl",n:"BAIIA minimum d'un complément",u:"M$",alt:1,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
   {k:"veMax",n:"Valeur d'entreprise maximale finançable",u:"M$",alt:15,st:"2 · Taille",src:"BAIIA maximum × multiple maximum. À resserrer selon l'équité disponible par cible.",conf:"Faible"},
   {k:"margeAgro",n:"Marge de BAIIA de référence, transformation agroalimentaire",u:"%",alt:7.5,st:"2 · Taille",src:"Chiffre de la direction. Statistique Canada donne 7,5 % (33-10-0500-01, 2022-2024). Les écarts par sous-industrie s'y ajoutent.",conf:"Moyenne"},
   {k:"rpeAdj",n:"Revenu par employé d'une PME, en % de la moyenne de son industrie",u:"%",alt:80,st:"2 · Taille",src:"Statistique Canada 2024 (16-10-0117-01 ÷ 14-10-0202-01). Les moyennes incluent les grandes usines : une PME peut être plus bas.",conf:"Moyenne"},
@@ -1906,7 +1911,7 @@ window.basaltExport=function(){
   return {
     date:new Date().toISOString(),year:YEAR,cfg:CFG,disp:BENCH_DISP,agroRef:AGRO_REF,stats:S.st,
     verts:THESE_VERTS.map(v=>({v,label:vlab(v),on:vertsOn().includes(v),pts:hypGet(CFG,"vertPts."+v),floor:ebFloor({verticale:v}),...(S.tri.get(v)||{slN:0,slC:0,rN:0,rC:0,g:0})})),
-    hyp:hypSorted().map(h=>({id:hypId(h),k:h.k,n:h.n,u:h.u,st:h.st,v:hypGet(CFG,h.k),alt:h.alt==null?null:h.alt,bool:!!h.bool,src:hypSrc(h),conf:hypConf(h),impact:impactTxt(h,m.get(h.k)),chg:m.has(h.k)?m.get(h.k).chg:null})),
+    hyp:hypSorted().map(h=>({id:hypId(h),k:h.k,g:h.g||"",n:h.n,u:h.u,st:h.st,v:hypGet(CFG,h.k),alt:h.alt==null?null:h.alt,bool:!!h.bool,src:hypSrc(h),conf:hypConf(h),impact:impactTxt(h,m.get(h.k)),chg:m.has(h.k)?m.get(h.k).chg:null})),
     info:HYP_INFO.map((h,i)=>({id:"H"+(HYP.length+i+1),...h})),
     bench:BENCH.map(b=>({...b,mc:margeC(b),n:S.rows.filter(r=>r.d.sz.b&&r.d.sz.b.id===b.id).length})),
     rows:S.rows.map(r=>{
