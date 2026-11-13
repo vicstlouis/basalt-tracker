@@ -310,6 +310,22 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 .insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:14px}
 .ins{padding:11px 14px;border-radius:9px;border:1.5px dashed var(--rule);background:var(--paper);font-size:12.5px;color:var(--ink);line-height:1.45}
 .ins.keep{border-color:var(--keep)} .ins.check{border-color:var(--check)} .ins.out{border-color:#8D939B}
+.skbox{position:relative;background:var(--paper);border:1px solid var(--rule-soft);border-radius:12px;padding:16px 18px 12px;margin-bottom:16px}
+.sklegend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:10px;font-size:12px;color:var(--ink-2)}
+.sklegend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.sklegend .hint{margin-left:auto;color:var(--ink-3);font-size:11.5px}
+.skscroll{overflow-x:auto}
+#sankey svg{display:block}
+.sk-col{font:600 10px var(--f-body);letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3)}
+.sk-lab{font:500 11.5px var(--f-body);fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.sk-lab tspan{fill:var(--ink-3);font-variant-numeric:tabular-nums}
+.sk-link{transition:fill-opacity .15s;cursor:default}
+.sk-node{cursor:pointer}
+.sk-node rect{fill:var(--rock);transition:fill .15s}
+.sk-node:hover rect{fill:var(--amber)}
+.sk-node.on rect{fill:var(--amber)}
+.sk-tip{position:absolute;pointer-events:none;background:var(--rock);color:var(--rock-ink);font-size:11.5px;padding:7px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:10}
+.sk-tip b{color:var(--amber-rock)}
 .fs-row{display:grid;grid-template-columns:30px minmax(280px,2.4fr) minmax(260px,1.4fr) minmax(110px,1fr);gap:14px;align-items:center;padding:9px 8px;border-top:1px solid var(--rule-soft);font-size:12px;border-radius:8px}
 .fs-row[data-fk]{cursor:pointer}
 .fs-row[data-fk]:hover,.fs-row.on{background:var(--paper-hover)}
@@ -544,6 +560,11 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
       <div id="univMap" hidden></div>
     </div>
     <div class="insights" id="triIns"></div>
+    <div class="skbox">
+      <div class="sklegend" id="skLegend"></div>
+      <div class="skscroll"><div id="sankey"></div></div>
+      <div class="sk-tip" id="skTip" hidden></div>
+    </div>
     <div class="steps" id="steps"></div>
     <div class="steps" id="tript"></div>
     <div class="steps" id="hypBox"></div>
@@ -1807,6 +1828,55 @@ function triInsights(S){
     {g:none.length?"out":"",t:`Candidats noyau qualifiés : ${best.join(", ")||"aucun"}${best.length?" en tête":""}. ${none.length?`<b>Aucun noyau crédible</b> en ${none.join(", ")}.`:"Chaque verticale retenue a au moins un candidat noyau."}`},
   ];
 }
+/* Sankey d'attrition : le tronc rétrécit d'étape en étape; chaque coupe, la zone grise et la réserve s'en détachent. */
+function renderSankey(S){
+  const host=$("#sankey"),tip=$("#skTip"),st=S.st;
+  const C={keep:"var(--keep)",out:"#8D939B",grise:"var(--est)",res:"var(--check)"};
+  $("#skLegend").innerHTML=[[C.keep,"Restent dans l'entonnoir"],[C.out,"Rejetées"],[C.grise,"Zone grise : mises de côté, pas rejetées"],[C.res,"Réserve : qualifiées, au-delà du plafond"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique un bloc pour voir ses sociétés.</span>`;
+  if(!st.N){host.innerHTML=`<div class="empty">Aucune société dans la base.</div>`;return;}
+  const cols=[{n:"Base complète"},{n:"Exclusions",d:[["excl",st.excl,"out","rejetées"]]},{n:"Verticale",d:[["vert",st.vert,"out","rejetées"]]},{n:"Géographie",d:[["geo",st.geo,"out","rejetées"]]},
+    {n:"Taille",d:[["taille",st.taille+st.releve,"out","rejetées"],["grise",st.grise,"grise","en zone grise"]]},{n:"Score et plafond",d:[["reserve",st.reserve,"res","en réserve"]]}];
+  const n=cols.length-1,avail=host.parentElement.clientWidth||1100,W=Math.max(avail,720),NW=12,top=40,G=24,TH=300,k=TH/st.N;
+  const PADR=130,xs=cols.map((_,c)=>Math.round(c*(W-NW-PADR)/n));
+  const rem=[st.N];cols.slice(1).forEach(c=>rem.push(rem[rem.length-1]-c.d.reduce((s,d)=>s+d[1],0)));
+  const H=top+TH+G+2*22+30;
+  let links="",nodes="",labs="";
+  cols.forEach((c,i)=>{labs+=`<text class="sk-col" x="${xs[i]}" y="14">${esc(i===n?"Shortlist":c.n)}</text>`;});
+  const band=(xa,xb,sy,ty,h,col,txt)=>{const xm=(xa+xb)/2,hh=Math.max(h,0.8);links+=`<path class="sk-link" data-tip="${esc(txt)}" d="M${xa},${sy} C${xm},${sy} ${xm},${ty} ${xb},${ty} L${xb},${ty+hh} C${xm},${ty+hh} ${xm},${sy+hh} ${xa},${sy+hh} Z" fill="${col}" fill-opacity="0.45"></path>`;};
+  for(let c=1;c<=n;c++){
+    const xa=xs[c-1]+NW,xb=xs[c];
+    band(xa,xb,top,top,rem[c]*k,C.keep,`<b>${fmt(rem[c])}</b> passent « ${cols[c].n} »`);
+    let sy=top+rem[c]*k,ty=top+rem[c]*k+G;
+    cols[c].d.forEach(([key,cnt,g,word])=>{
+      if(!cnt)return;
+      const h=Math.max(2,cnt*k),on=TFOCUS===key;
+      band(xa,xb,sy,ty,cnt*k,C[g],`<b>${fmt(cnt)}</b> ${word} à l'étape « ${cols[c].n} »`);
+      nodes+=`<g class="sk-node${on?" on":""}" data-fk="${key}" tabindex="0" role="button" aria-label="${esc(cols[c].n)} : ${fmt(cnt)} ${word}"><rect x="${xs[c]}" y="${ty}" width="${NW}" height="${h}" rx="2" style="fill:${on?"var(--amber)":C[g]}"></rect><rect x="${xs[c]-6}" y="${ty-4}" width="${NW+12}" height="${h+8}" style="fill:transparent"></rect></g>`;
+      labs+=`<text class="sk-lab" x="${xs[c]+NW+7}" y="${ty+Math.min(h/2+4,14)}">${g==="out"?"−":""}${fmt(cnt)} <tspan>${word}</tspan></text>`;
+      sy+=cnt*k;ty+=h+22;
+    });
+  }
+  cols.forEach((c,i)=>{
+    const h=Math.max(2,rem[i]*k),last=i===n,on=last&&!TFOCUS;
+    nodes+=`<g class="sk-node${on?" on":""}"${last?` data-fk="sl" tabindex="0" role="button" aria-label="Shortlist : ${fmt(st.sl)} sociétés"`:` style="cursor:default;pointer-events:none"`}><rect x="${xs[i]}" y="${top}" width="${NW}" height="${h}" rx="2"${last?` style="fill:${on?"var(--amber)":C.keep}"`:""}></rect></g>`;
+    labs+=`<text class="sk-lab" x="${xs[i]+NW+7}" y="${top+12}">${fmt(rem[i])}${i===0?" <tspan>sociétés</tspan>":last?` <tspan>· A ${fmt(st.A)} · B ${fmt(st.B)}</tspan>`:""}</text>`;
+  });
+  host.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Entonnoir : ${fmt(st.N)} sociétés au départ, ${fmt(st.sl)} en shortlist">`+links+nodes+labs+`</svg>`;
+  const box=$(".skbox");
+  $$(".sk-link",host).forEach(p=>{
+    p.addEventListener("mousemove",e=>{
+      const r=box.getBoundingClientRect();tip.hidden=false;tip.innerHTML=p.dataset.tip;
+      let x=e.clientX-r.left+14;if(x+tip.offsetWidth>r.width-8)x=e.clientX-r.left-tip.offsetWidth-14;
+      tip.style.left=x+"px";tip.style.top=(e.clientY-r.top+14)+"px";p.setAttribute("fill-opacity",0.8);
+    });
+    p.addEventListener("mouseleave",()=>{tip.hidden=true;p.setAttribute("fill-opacity",0.45);});
+  });
+  $$(".sk-node[data-fk]",host).forEach(g=>{
+    const act=()=>{const k=g.dataset.fk;TFOCUS=k==="sl"||TFOCUS===k?null:k;renderFunnel();};
+    g.addEventListener("click",act);
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act();}});
+  });
+}
 function renderFSteps(S){
   const st=S.st,pop=S.rows.map(r=>r.it),nF=pop.filter(it=>num(it.ageFond)>0).length,nA=pop.filter(it=>ageOf(it)!=null).length;
   let rest=st.N;
@@ -1897,6 +1967,7 @@ function renderLots(){
 function renderFunnel(){
   const S=shortlist();
   $("#triIns").innerHTML=triInsights(S).map(x=>`<div class="ins ${x.g}">${x.t}</div>`).join("");
+  renderSankey(S);
   renderFSteps(S);
   renderTript(S);
   renderHyp();
