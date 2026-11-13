@@ -326,7 +326,7 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 .sk-tip{position:absolute;pointer-events:none;background:var(--rock);color:var(--rock-ink);font-size:11.5px;padding:7px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:10}
 .sk-tip b{color:var(--amber-rock)}
 .gr{color:var(--est)}
-.fcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fcards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .fcard{display:flex;flex-direction:column;gap:5px;text-align:left;padding:11px 13px;border:1px solid var(--rule-soft);border-radius:10px;background:#fff;font:inherit;cursor:pointer}
 .fcard:hover,.fcard.on{border-color:var(--amber)}
 .fcard.on{box-shadow:inset 3px 0 0 var(--amber)}
@@ -343,6 +343,7 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 #hypBox summary span{font-size:12px;color:var(--ink-3)}
 .ft tr.sec td{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);background:var(--rule-soft);padding:5px 8px}
 .hnote{font-size:12px;color:var(--ink-3);line-height:1.5;margin:10px 0 4px}
+.dual{display:inline-block;padding:1px 7px;border-radius:5px;background:var(--amber);color:#fff;font-size:10.5px;font-weight:700;white-space:nowrap}
 a.site{color:var(--keep-ink);text-decoration:none;white-space:nowrap}
 a.site:hover{text-decoration:underline}
 a.site.find{color:var(--ink-3)}
@@ -548,7 +549,7 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
   <!-- ENTONNOIR -->
   <section class="panel" id="panel-entonnoir">
     <div class="ptool">
-      <div class="intro"><b>De la base aux sociétés retenues.</b> Quatre filtres, dans l'ordre. Une société n'est rejetée que si toute sa fourchette de taille est hors fenêtre; sinon elle reste « à vérifier ». Estimé en violet (≈), vérifié en vert (✓).</div>
+      <div class="intro"><b>De la base aux sociétés retenues.</b> Cinq filtres, dans l'ordre, et chaque refus est justifié. En cas de doute, une société reste « à vérifier » plutôt que d'être rejetée. Estimé en violet (≈), vérifié en vert (✓).</div>
       <div class="right"><button class="btn dark" id="btnUniv">+ Importer des profils</button></div>
     </div>
     <div class="ingest" id="univBox" hidden>
@@ -797,8 +798,9 @@ const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
 const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
 const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
 /* BAIIA minimum de la taille visée par le fonds, par secteur (modifiable dans « Hypothèses »). */
+const GROWTH_REF_DEFAULT=4.5;   // moyenne de la fabrication au Canada, 2019-2024 (voir GROWTH)
 const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,ebMinV:{"ÉNER":3,"AGRO":2.5,"SV":2},addonCaMin:5,addonEbMin:0.5,multMax:7,veMax:35,
-  margeAgro:7,rpeAdj:100,releveEnt:30,provinces:["QC","ON"],verts:THESE_VERTS.slice(),hyp:{}};
+  margeAgro:7,rpeAdj:100,releveEnt:30,croissMin:GROWTH_REF_DEFAULT,croissDual:1,provinces:["QC","ON"],verts:THESE_VERTS.slice(),hyp:{}};
 let CFG={...DEFAULT_CFG};
 function ebFloor(it){const m=CFG.ebMinV||{},v=m[it&&it.verticale];return Number.isFinite(v)?v:CFG.ebMin;}
 function vertsOn(){return Array.isArray(CFG.verts)?CFG.verts:THESE_VERTS;}
@@ -879,6 +881,20 @@ const BENCH_CALIB=[
   "Marges agro : StatCan, BAIIA des entreprises canadiennes d'aliments et boissons 7,2 à 7,8 % (2022-2024).",
   "Sortie vers un stratégique : SPX a payé 605 M$ CA pour Neptronic (juillet 2026). Un commentaire de marché, non vérifié, place le multiple un peu au-dessus de 12x le BAIIA.",
 ];
+/* Croissance des revenus de chaque industrie au Canada, en % par an de 2019 à 2024 (taux composé, dollars courants).
+   Source : Statistique Canada, tableau 16-10-0117-01, revenus totaux par code SCIAN. Les services n'y figurent pas. */
+const GROWTH={"31-33":4.5,"3111":5.4,"3112":7.1,"3113":8.5,"3114":8.5,"3115":5.4,"3116":7.6,"3117":1.9,"3118":8.8,"3119":9.5,"3121":3.5,"3152":-3.3,"3219":5.3,"3222":4.7,"3254":6.4,"3256":5.9,"3261":5.0,"3273":7.2,"3314":7.0,"3321":4.4,"3322":2.1,"3323":6.7,"3324":2.7,"3325":2.3,"3326":4.7,"3327":3.9,"3328":3.9,"3329":5.5,"3331":6.6,"3332":5.8,"3333":1.8,"3334":9.7,"3335":2.9,"3336":4.3,"3339":4.3,"3342":0.6,"3345":3.2,"335":7.8,"3352":10.7,"3366":12.9,"3391":2.8};
+const GROWTH_REF=GROWTH["31-33"];
+const GROWTH_SRC="Statistique Canada, tableau 16-10-0117-01, revenus totaux, Canada, 2019 à 2024";
+const DEFENSE_SRC="Dépenses de défense du Canada : 1,47 % du PIB en 2024, 2 % atteint en 2025, cible de 5 % d'ici 2035 (OTAN)";
+const BENCH_SCIAN={"ener-electrique":"335","mfg-general":"31-33","serv-reparation":"","serv-genie":"","serv-rd":"","sv-labos":""};
+function scianOf(b){
+  if(b.id in BENCH_SCIAN)return BENCH_SCIAN[b.id];
+  const p=String(b.naics).match(/\((\d{4})\b/),f=String(b.naics).match(/\d{3,6}/);
+  return p?p[1]:f?f[0].slice(0,4):"";
+}
+/* g : croissance de l'industrie (% par an). du : l'industrie a des applications civiles et militaires. */
+DEFAULT_BENCH.forEach(b=>{const c=scianOf(b);b.g=c&&GROWTH[c]!=null?GROWTH[c]:null;b.du=b.v==="Défense";});
 let BENCH=DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
 const PROV_KEYS=["verticale","site","employes","ca","baiia","fondation","ageFond","prix"];
 const PROV_LAB={verticale:"Secteur",site:"Site web",employes:"Employés",ca:"CA (M$)",baiia:"BAIIA (M$)",fondation:"Fondation",ageFond:"Âge du fondateur",prix:"Prix demandé (M$)"};
@@ -888,7 +904,9 @@ function validBench(b){
 }
 function mergeBench(list){
   if(!Array.isArray(list)||!list.length)return DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
-  const out=list.filter(validBench).map(b=>({id:b.id,v:str(b.v),label:str(b.label)||b.id,naics:str(b.naics),qc:+b.qc,on:+b.on,m:b.m.map(Number),x:b.x.map(Number),src:str(b.src)}));
+  const out=list.filter(validBench).map(b=>({id:b.id,v:str(b.v),label:str(b.label)||b.id,naics:str(b.naics),qc:+b.qc,on:+b.on,m:b.m.map(Number),x:b.x.map(Number),src:str(b.src),
+    g:b.g===undefined?((DEFAULT_BENCH.find(d=>d.id===b.id)||{}).g??null):(b.g===null||b.g===""||!Number.isFinite(+b.g)?null:+b.g),
+    du:b.du===undefined?!!(DEFAULT_BENCH.find(d=>d.id===b.id)||{}).du:!!b.du}));
   DEFAULT_BENCH.forEach(d=>{if(!out.some(b=>b.id===d.id))out.push({...d,m:[...d.m],x:[...d.x]});});
   return out;
 }
@@ -1013,6 +1031,24 @@ function releveOf(it){
   if(age!=null)return {pts:age>=E+10?35:age>=E?28:age>=E-10?15:3};
   return {pts:10};
 }
+/* Potentiel de croissance, lu sur l'industrie de la société. Chaque refus porte sa justification chiffrée.
+   dual : applications civiles et militaires (industrie marquée ainsi, secteur défense, ou pont vers la défense noté sur la fiche). */
+function croissOf(it,b){
+  const c=CFG,seuil=Number(c.croissMin),g=b?b.g:null,pc=x=>(x>0?"+":"")+dec(x)+" % par an";
+  const dual=!!(b&&b.du)||it.verticale==="Défense"||/d[ée]fense|militaire/i.test(String(it.bridge||""));
+  const ind=b?`« ${b.label} »`:"de la société",ref=`moyenne de la fabrication : ${pc(GROWTH_REF)}`;
+  if(g==null){
+    if(dual&&c.croissDual)return {z:"passe",dual,g,why:`Applications civiles et militaires. ${DEFENSE_SRC}. Aucune série de revenus pour l'industrie ${ind}.`};
+    return {z:"grise",dual,g,why:`Croissance à évaluer : aucune série de revenus publiée pour l'industrie ${ind} (services).`};
+  }
+  if(g>=seuil)return {z:"passe",dual,g,fort:true,why:`Industrie en croissance : ${pc(g)} de 2019 à 2024 (${ref})${dual?", avec des applications civiles et militaires":""}.`};
+  if(dual&&c.croissDual){
+    if(g<0)return {z:"grise",dual,g,why:`Applications civiles et militaires, mais les revenus de l'industrie ${ind} reculent : ${pc(g)} de 2019 à 2024. À vérifier société par société.`};
+    return {z:"passe",dual,g,why:`Applications civiles et militaires : gardée malgré une croissance de ${pc(g)} (seuil : ${pc(seuil)}). ${DEFENSE_SRC}.`};
+  }
+  if(g>=seuil-1)return {z:"grise",dual,g,why:`Croissance proche du seuil : ${pc(g)} de 2019 à 2024 pour un seuil de ${pc(seuil)}, industrie ${ind}. Aucune application militaire connue.`};
+  return {z:"rejet",dual,g,why:`Croissance trop faible : ${pc(g)} de 2019 à 2024, sous le seuil de ${pc(seuil)}, industrie ${ind}. Aucune application militaire connue. Source : ${GROWTH_SRC}.`};
+}
 /* Place dans l'entonnoir. z : « rejet » (st = filtre qui la retire), « grise » (à vérifier) ou « passe » (retenue).
    cible : la société a la taille visée par le fonds (CA et BAIIA centraux au-dessus des minimums visés). */
 function funnelOf(it,sz){
@@ -1033,15 +1069,20 @@ function funnelOf(it,sz){
   const g=(lab,s,lo,hi)=>s.mid<lo?`${lab} estimé à ${M(s.mid)}, sous ${M(lo)}, mais la fourchette monte à ${M(s.hi)}`:s.mid>hi?`${lab} estimé à ${M(s.mid)}, au-dessus de ${M(hi)}, mais la fourchette descend à ${M(s.lo)}`:"";
   const gw=g("CA",ca,c.addonCaMin,c.caMax)||g("BAIIA",eb,c.addonEbMin,c.ebMax)||(ve&&ve.mid>c.veMax?`Valeur estimée à ${M(ve.mid)}, au-dessus de ${M(c.veMax)}, mais la fourchette descend à ${M(ve.lo)}`:"");
   if(gw)return {z:"grise",why:gw};
-  return {z:"passe",cible:ca.mid>=c.caMin&&eb.mid>=ebFloor(it)};
+  const gr=croissOf(it,sz.b),cible=ca.mid>=c.caMin&&eb.mid>=ebFloor(it);
+  if(gr.z!=="passe")return {z:gr.z,st:"croiss",why:gr.why,gr};
+  return {z:"passe",cible,gr};
 }
-/* Score sur 100, pour trier : âge de l'entreprise 35, taille 25, fit évalué 20, fiabilité des chiffres 20. */
+/* Score sur 100, pour trier : croissance 25, âge de l'entreprise 25, taille 20, fit évalué 15, fiabilité des chiffres 15. */
 function scoreOf(it,f,rel,sz){
-  const taille=f.z==="passe"?(f.cible?25:12):f.z==="grise"?6:0;
-  const fit={"Fit fort":20,"Fit modéré":13,"Fit faible":3}[it.fit];
-  const fitP=fit==null?8:fit;
-  const ca=sz.ca,fiab=!ca?0:ca.p==="v"?20:(ca.parts||[]).length>1?(ca.gap>2?0:14):8;
-  return {total:Math.min(100,rel.pts+taille+fitP+fiab),parts:{succ:rel.pts,taille,fit:fitP,fiab}};
+  const gr=f.gr||croissOf(it,sz.b);
+  const croiss=(gr.fort?15:gr.g!=null&&gr.g>=Number(CFG.croissMin)-1?8:0)+(gr.dual?10:0);
+  const succ=Math.round(rel.pts*25/35);
+  const taille=f.z==="passe"?(f.cible?20:10):f.z==="grise"?5:0;
+  const fit={"Fit fort":15,"Fit modéré":10,"Fit faible":2}[it.fit];
+  const fitP=fit==null?6:fit;
+  const ca=sz.ca,fiab=!ca?0:ca.p==="v"?15:(ca.parts||[]).length>1?(ca.gap>2?0:10):6;
+  return {total:Math.min(100,croiss+succ+taille+fitP+fiab),parts:{croiss,succ,taille,fit:fitP,fiab}};
 }
 let DER=new Map();
 function D(it){
@@ -1525,7 +1566,7 @@ function optHTML(c,v){
   return (has?"":`<option selected>${esc(v)}</option>`)+opts.map(o=>`<option value="${esc(o)}"${o===(v||"")?" selected":""}>${o?esc(c.lab?c.lab(o):o):"—"}</option>`).join("");
 }
 function vchip(d){const g=GROUPS.find(x=>x.id===d.group);return `<span class="vchip ${d.group}"><i aria-hidden="true">${g.icon}</i>${esc(d.verdict)}</span>`;}
-function scoreTitle(d){const p=d.parts;return `Âge de l'entreprise ${p.succ}/35 · Taille ${p.taille}/25 · Fit ${p.fit}/20 · Fiabilité des chiffres ${p.fiab}/20`;}
+function scoreTitle(d){const p=d.parts;return `Croissance ${p.croiss}/25 · Âge de l'entreprise ${p.succ}/25 · Taille ${p.taille}/20 · Fit ${p.fit}/15 · Fiabilité des chiffres ${p.fiab}/15`;}
 function cellHTML(key,col,k,it,d,left){
   const id=esc(it.id),st=left!=null?` style="left:${left}px"`:"";
   switch(col.kind){
@@ -1672,12 +1713,14 @@ const HYP=[
   {k:"ebMinV.AGRO",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : agroalimentaire",u:"M$",alt:2,src:"Thèse du secteur.",conf:"Élevée"},
   {k:"ebMinV.SV",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : sciences de la vie",u:"M$",alt:1.5,src:"Thèse du secteur.",conf:"Élevée"},
   {k:"ebMin",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : autres secteurs",u:"M$",alt:1.5,src:"Thèse du fonds.",conf:"Élevée"},
+  {k:"croissMin",sec:"Croissance",n:"Croissance minimale des revenus de l'industrie, par an",u:"%",alt:6,src:"Moyenne de la fabrication au Canada de 2019 à 2024 : 4,5 % par an (Statistique Canada, 16-10-0117-01, dollars courants). Une industrie à moins d'un point sous le seuil reste « à vérifier ».",conf:"Moyenne"},
+  {k:"croissDual",sec:"Croissance",n:"Garder les industries à applications civiles et militaires même sous ce seuil (1 = oui, 0 = non)",u:"",alt:0,bool:true,src:"Dépenses de défense du Canada : 1,47 % du PIB en 2024, 2 % atteint en 2025, cible de 5 % d'ici 2035 (OTAN). La demande militaire à venir ne se voit pas encore dans les revenus de 2019 à 2024.",conf:"Moyenne"},
   {k:"margeAgro",sec:"Estimation des chiffres",n:"Marge de BAIIA de référence en transformation agroalimentaire",u:"%",alt:7.5,src:"Chiffre de la direction. Statistique Canada donne 7,5 % (33-10-0500-01, 2022-2024). L'écart de chaque sous-industrie s'y ajoute.",conf:"Moyenne"},
   {k:"rpeAdj",sec:"Estimation des chiffres",n:"Revenu par employé d'une PME, en % de la moyenne de son industrie",u:"%",alt:80,src:"Statistique Canada 2024 (16-10-0117-01 ÷ 14-10-0202-01). Les moyennes incluent les grandes usines : une PME peut être plus bas.",conf:"Moyenne"},
   {k:"disp",sec:"Estimation des chiffres",n:"Largeur de la fourchette autour du revenu par employé (±)",u:"%",alt:40,src:"Hypothèse de travail : fourchettes larges pour ne perdre aucune cible. Se modifie dans « Hypothèses par industrie ».",conf:"Moyenne",ro:true},
   {k:"releveEnt",sec:"Score",n:"Âge de l'entreprise à partir duquel une relève est probable",u:"ans",alt:15,src:"Hypothèse de travail : l'âge de l'entreprise remplace l'âge du fondateur, inconnu.",conf:"Faible"},
 ];
-const SCORE_TXT="Score sur 100, pour trier : âge de l'entreprise 35 (indice de relève), taille 25 (25 si elle a la taille visée par le fonds, 12 si elle est plus petite), fit évalué 20, fiabilité des chiffres 20 (vérifié 20, deux sources qui concordent 14, une seule source 8, sources en désaccord 0).";
+const SCORE_TXT="Score sur 100, pour trier : croissance 25 (15 si l'industrie dépasse le seuil, plus 10 pour des applications civiles et militaires), âge de l'entreprise 25 (indice de relève), taille 20 (20 si elle a la taille visée par le fonds, 10 si elle est plus petite), fit évalué 15, fiabilité des chiffres 15.";
 const hypId=h=>"H"+(HYP.indexOf(h)+1);
 function hypGet(c,k,disp){
   if(k==="disp")return Math.round((disp==null?BENCH_DISP:disp)*100);
@@ -1720,9 +1763,9 @@ function shortlist(){
   const rows=funnelItems().map(it=>({it,d:D(it)}));
   const pass=rows.filter(r=>r.d.f.z==="passe").sort((a,b)=>b.d.score-a.d.score||(b.d.age==null?-1:b.d.age)-(a.d.age==null?-1:a.d.age)||(a.it.id<b.it.id?-1:a.it.id>b.it.id?1:0));
   const rank=new Map();pass.forEach((r,i)=>rank.set(r.it.id,i+1));
-  rows.forEach(r=>{const f=r.d.f;r.rank=rank.get(r.it.id)||null;r.b=f.z==="rejet"?f.st:f.z==="grise"?"grise":"sl";});
+  rows.forEach(r=>{const f=r.d.f;r.rank=rank.get(r.it.id)||null;r.b=f.z==="rejet"?f.st:f.z==="grise"?(f.st==="croiss"?"griseC":"grise"):"sl";});
   const n=b=>rows.filter(r=>r.b===b).length;
-  const st={N:rows.length,excl:n("excl"),vert:n("vert"),geo:n("geo"),taille:n("taille"),grise:n("grise"),sl:n("sl"),cible:rows.filter(r=>r.b==="sl"&&r.d.f.cible).length};
+  const st={N:rows.length,excl:n("excl"),vert:n("vert"),geo:n("geo"),taille:n("taille"),grise:n("grise"),croiss:n("croiss"),griseC:n("griseC"),sl:n("sl"),cible:rows.filter(r=>r.b==="sl"&&r.d.f.cible).length,dual:rows.filter(r=>r.b==="sl"&&r.d.f.gr&&r.d.f.gr.dual).length};
   return SL={der:DER,rows,st};
 }
 /* Rejoue l'entonnoir avec une autre configuration, sans toucher à l'affichage. */
@@ -1739,7 +1782,7 @@ function hypImpacts(){
   HYP.forEach(h=>{
     if(h.alt==null||hypGet(CFG,h.k)===h.alt)return;
     const s=(h.k==="disp"?withCfg(CFG,h.alt/100,shortlist):withCfg(hypSet(CFG,h.k,h.alt),null,shortlist)).st;
-    m.set(h.k,{alt:h.alt,sl:[base.sl,s.sl],grise:[base.grise,s.grise],cible:[base.cible,s.cible]});
+    m.set(h.k,{alt:h.alt,sl:[base.sl,s.sl],grise:[base.grise+base.griseC,s.grise+s.griseC],cible:[base.cible,s.cible]});
   });
   IMP={der:DER,m};return m;
 }
@@ -1753,10 +1796,10 @@ function impactTxt(h,x){
   return v+" : "+(bits.join(", ")||"aucun changement")+".";
 }
 const impactW=x=>x?Math.abs(x.sl[1]-x.sl[0])+Math.abs(x.grise[1]-x.grise[0])+Math.abs(x.cible[1]-x.cible[0]):-1;
-const BUCKET_N={excl:"Exclues",vert:"Secteur non retenu",geo:"Hors province",taille:"Hors taille",grise:"À vérifier",sl:"Retenues"};
+const BUCKET_N={excl:"Exclues",vert:"Secteur non retenu",geo:"Hors province",taille:"Hors taille",grise:"Taille à vérifier",croiss:"Croissance trop faible",griseC:"Croissance à vérifier",sl:"Retenues"};
 function whyLine(it,d){
-  const p=d.parts,fi=p.fiab>=20?"CA vérifié":p.fiab>=14?"deux sources concordent":p.fiab>=8?"une seule source":"sources en désaccord (plus de 2x)";
-  return `${d.f.cible?"Taille visée par le fonds":"Plus petite que la taille visée"} · ${fi}`;
+  const p=d.parts,fi=p.fiab>=15?"CA vérifié":p.fiab>=10?"deux sources concordent":p.fiab>=6?"une seule source":"sources en désaccord (plus de 2x)";
+  return `${d.f.gr?d.f.gr.why+" ":""}${d.f.cible?"Taille visée par le fonds":"Plus petite que la taille visée"}; ${fi}.`;
 }
 /* Les quatre filtres, en clair, avec ce que chacun retire. */
 function renderFilters4(S){
@@ -1767,6 +1810,7 @@ function renderFilters4(S){
     +card("vert","2 · Secteur",`Gardés : ${vertsOn().map(vlab).join(", ")||"aucun"}.`,st.vert)
     +card("geo","3 · Province",`Gardées : ${(c.provinces||[]).join(" et ")||"aucune"}.`,st.geo)
     +card("taille","4 · Taille",`CA de ${dec(c.addonCaMin)} à ${dec(c.caMax)} M$ et BAIIA de ${dec(c.addonEbMin)} à ${dec(c.ebMax)} M$, sur la valeur centrale estimée.`,st.taille,` · <i>${fmt(st.grise)} à vérifier</i>`)
+    +card("croiss","5 · Croissance",`Revenus de l'industrie en hausse d'au moins ${dec(c.croissMin)} % par an de 2019 à 2024${c.croissDual?", ou applications civiles et militaires":""}. Chaque refus est justifié sur sa ligne.`,st.croiss,` · <i>${fmt(st.griseC)} à vérifier</i>`)
     +`</div>`;
   $("#hypEdit").onclick=()=>$("#btnThese").click();
   $("#hypBench").onclick=()=>$("#btnBench").click();
@@ -1775,10 +1819,11 @@ function renderFilters4(S){
 function renderSankey(S){
   const host=$("#sankey"),tip=$("#skTip"),st=S.st;
   const C={keep:"var(--keep)",out:"#8D939B",grise:"var(--est)"};
-  $("#skLegend").innerHTML=[[C.keep,"Restent"],[C.out,"Rejetées"],[C.grise,"À vérifier : la fourchette touche la fenêtre de taille, mais le centre est dehors"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique un bloc pour voir ses sociétés.</span>`;
+  $("#skLegend").innerHTML=[[C.keep,"Restent"],[C.out,"Rejetées"],[C.grise,"À vérifier : ni retenues, ni rejetées, une donnée reste à confirmer"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique un bloc pour voir ses sociétés.</span>`;
   if(!st.N){host.innerHTML=`<div class="empty">Aucune société dans la base.</div>`;return;}
   const cols=[{n:"Base complète"},{n:"Exclusions",d:[["excl",st.excl,"out","rejetées"]]},{n:"Secteur",d:[["vert",st.vert,"out","rejetées"]]},{n:"Province",d:[["geo",st.geo,"out","rejetées"]]},
-    {n:"Taille",d:[["taille",st.taille,"out","rejetées"],["grise",st.grise,"grise","à vérifier"]]}];
+    {n:"Taille",d:[["taille",st.taille,"out","rejetées"],["grise",st.grise,"grise","à vérifier"]]},
+    {n:"Croissance",d:[["croiss",st.croiss,"out","rejetées"],["griseC",st.griseC,"grise","à vérifier"]]}];
   const n=cols.length-1,avail=host.parentElement.clientWidth||1100,W=Math.max(avail,720),NW=12,top=40,G=24,TH=260,k=TH/st.N;
   const PADR=150,xs=cols.map((_,c)=>Math.round(c*(W-NW-PADR)/n));
   const rem=[st.N];cols.slice(1).forEach(c=>rem.push(rem[rem.length-1]-c.d.reduce((s,d)=>s+d[1],0)));
@@ -1833,23 +1878,27 @@ function siteHTML(it){
   if(h)return `<a class="site${est?" est":""}" href="${esc(/^https?:/i.test(it.site)?it.site:"https://"+it.site)}" target="_blank" rel="noopener" title="${est?"Site estimé, à confirmer":"Site de la société"}${it.src&&it.src.site?" · "+esc(it.src.site):""}">${est?"≈ ":""}${esc(h)} ↗</a>`;
   return `<a class="site find" href="https://www.google.com/search?q=${encodeURIComponent([it.name,it.ville].filter(Boolean).join(" "))}" target="_blank" rel="noopener" title="Aucun site enregistré : lancer une recherche">chercher ↗</a>`;
 }
+function grHTML(gr){
+  const g=gr.g==null?`<span class="rg">pas de série</span>`:`<span class="pv e" title="${esc(GROWTH_SRC)}">${gr.g>0?"+":""}${dec(gr.g)} % / an</span>`;
+  return g+(gr.dual?` <span class="dual" title="Applications civiles et militaires">civil + militaire</span>`:"");
+}
 function renderTriList(S){
   const host=$("#triList"),k=TFOCUS||"sl";
   const idx=S.rows.filter(r=>r.b===k);
   if(k==="sl")idx.sort((a,b)=>a.rank-b.rank);
   else idx.sort((a,b)=>b.d.score-a.d.score||(a.it.name||"").localeCompare(b.it.name||""));
   const MAXR=1000,fresh=k==="sl"?idx.filter(r=>r.it._u):[];
-  $("#focusbar").innerHTML=`<span><b>${esc(BUCKET_N[k])}</b> : ${fmt(idx.length)} société${idx.length>1?"s":""}${k==="sl"?`, triées par score. ${fmt(S.st.cible)} ont la taille visée par le fonds.`:""}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir aux retenues</button>`:""}${fresh.length?`<span style="margin-left:auto"><button class="btn sm dark" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
+  $("#focusbar").innerHTML=`<span><b>${esc(BUCKET_N[k])}</b> : ${fmt(idx.length)} société${idx.length>1?"s":""}${k==="sl"?`, triées par score. ${fmt(S.st.dual)} ont des applications civiles et militaires, ${fmt(S.st.cible)} ont la taille visée par le fonds.`:""}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir aux retenues</button>`:""}${fresh.length?`<span style="margin-left:auto"><button class="btn sm dark" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
   const u=$("#unfocusT");if(u)u.onclick=()=>{TFOCUS=null;renderFunnel();};
   const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(fresh.map(r=>r.it._u));
-  const cols=[["#",50],["Entreprise",240],["Site web",170],["Secteur",190],["Activité",230],["Ville",130],["Prov.",56],["Employés",84],["CA (M$)",150],["BAIIA (M$)",150],["Fondée",132],["Score",62],[k==="sl"?"Lecture":"Pourquoi elle est ici",330],["",120]];
+  const cols=[["#",50],["Entreprise",240],["Site web",170],["Secteur",190],["Activité",230],["Ville",130],["Prov.",56],["Employés",84],["CA (M$)",150],["BAIIA (M$)",150],["Fondée",132],["Croissance de l'industrie",190],["Score",62],[k==="sl"?"Pourquoi elle est retenue":"Pourquoi elle est ici",560],["",120]];
   const width=cols.reduce((s,c)=>s+c[1],0);
   const rg=(it,d,key)=>{const s=d.sz[key];return s?`${pvHTML(s,sizeTitle(it,d.sz,key))} <span class="rg">${fmtM(s.lo)}–${fmtM(s.hi)}</span>`:"—";};
   const rows=idx.slice(0,MAXR).map(r=>{
     const it=r.it,d=r.d,f=d.f,g=r.b==="sl"?"keep":r.b==="grise"?"check":"out";
     const vp=pvOf(it,"verticale")==="verifie"?"v":"e",fp=pvOf(it,"fondation")==="verifie"?"v":"e";
     const act=it._u?(r.b==="sl"?`<button class="btn sm dark" data-promo="${esc(it.id)}">→ Radar</button>`:""):`<button class="btn sm" data-open="${esc(it.id)}" aria-label="Ouvrir la fiche de ${esc(it.name)}">Ouvrir</button>`;
-    return `<tr class="${g}"><td class="calc">${r.rank||"—"}</td><td class="calc"><b>${esc(it.name)}</b></td><td class="calc">${siteHTML(it)}</td><td class="calc"><span class="pv ${vp}" title="${vp==="v"?"Secteur vérifié":"Secteur estimé"}${it.src&&it.src.verticale?" · "+esc(it.src.verticale):""}">${vp==="v"?esc(vlab(it.verticale))+" ✓":"≈ "+esc(vlab(it.verticale))}</span></td><td class="calc" title="${esc(it.soussecteur||"")}">${esc(String(it.soussecteur||"—").replace(/^\d{4} · /,""))}</td><td class="calc">${esc(it.ville||"—")}</td><td class="calc">${esc(it.province||"—")}</td><td class="calc">${d.sz.emp?`<span class="pv ${d.sz.emp.p}">${d.sz.emp.p==="v"?esc(it.employes)+" ✓":"≈ "+esc(it.employes)}</span>`:"—"}</td><td class="calc">${rg(it,d,"ca")}</td><td class="calc">${rg(it,d,"eb")}</td><td class="calc">${d.age==null?"—":`<span class="pv ${fp}">${fp==="v"?esc(it.fondation)+" ✓":"≈ "+esc(it.fondation)}</span> <span class="rg">${d.age} ans</span>`}</td><td class="calc" title="${esc(scoreTitle(d))}">${d.score}</td><td class="calc why">${esc(f.z==="passe"?whyLine(it,d):f.why)}</td><td><div class="act">${act}</div></td></tr>`;
+    return `<tr class="${g}"><td class="calc">${r.rank||"—"}</td><td class="calc"><b>${esc(it.name)}</b></td><td class="calc">${siteHTML(it)}</td><td class="calc"><span class="pv ${vp}" title="${vp==="v"?"Secteur vérifié":"Secteur estimé"}${it.src&&it.src.verticale?" · "+esc(it.src.verticale):""}">${vp==="v"?esc(vlab(it.verticale))+" ✓":"≈ "+esc(vlab(it.verticale))}</span></td><td class="calc" title="${esc(it.soussecteur||"")}">${esc(String(it.soussecteur||"—").replace(/^\d{4} · /,""))}</td><td class="calc">${esc(it.ville||"—")}</td><td class="calc">${esc(it.province||"—")}</td><td class="calc">${d.sz.emp?`<span class="pv ${d.sz.emp.p}">${d.sz.emp.p==="v"?esc(it.employes)+" ✓":"≈ "+esc(it.employes)}</span>`:"—"}</td><td class="calc">${rg(it,d,"ca")}</td><td class="calc">${rg(it,d,"eb")}</td><td class="calc">${d.age==null?"—":`<span class="pv ${fp}">${fp==="v"?esc(it.fondation)+" ✓":"≈ "+esc(it.fondation)}</span> <span class="rg">${d.age} ans</span>`}</td><td class="calc">${grHTML(f.gr||croissOf(it,d.sz.b))}</td><td class="calc" title="${esc(scoreTitle(d))}">${d.score}</td><td class="calc why" title="${esc(f.z==="passe"?whyLine(it,d):f.why)}">${esc(f.z==="passe"?whyLine(it,d):f.why)}</td><td><div class="act">${act}</div></td></tr>`;
   }).join("");
   host.innerHTML=`<div class="sheet-wrap" style="--stick:0px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map(c=>`<th style="top:0">${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
   $$("[data-promo]",host).forEach(b=>b.onclick=()=>{const r=S.rows.find(x=>x.it.id===b.dataset.promo);if(r)promote([r.it._u]);});
@@ -1907,7 +1956,7 @@ window.basaltExport=function(){
         exclusion:it.exclusion||"",bench:sz.b?sz.b.id:"",emp:sz.emp?g(sz.emp):null,empTxt:it.employes==null?"":String(it.employes),caIn:rng(it.ca),caV:pvOf(it,"ca")==="verifie",ebIn:rng(it.baiia),ebV:pvOf(it,"baiia")==="verifie",
         fondation:num(it.fondation),age:d.age,ageFond:num(it.ageFond),raison:it.raison||"",fit:it.fit||"",
         ca:g(sz.ca),eb:g(sz.eb),ve:g(sz.ve),gap:sz.ca&&sz.ca.gap||1,
-        b:r.b,z:d.f.z,st:d.f.st||"",why:d.f.z==="passe"?whyLine(it,d):d.f.why,cible:!!d.f.cible,score:d.score,parts:d.parts,rank:r.rank};
+        b:r.b,z:d.f.z,st:d.f.st||"",why:d.f.z==="passe"?whyLine(it,d):d.f.why,cible:!!d.f.cible,croissance:d.sz.b?d.sz.b.g:null,dual:!!(d.f.gr&&d.f.gr.dual),score:d.score,parts:d.parts,rank:r.rank};
     }),
   };
 };
@@ -2063,7 +2112,7 @@ function renderStats(){
   const radarKeep=inStage("radar").filter(it=>D(it).group==="keep").length;
   const R=(items.size||UROWS.length)?shortlist().st:null;
   const tiles=[
-    {n:"Base",v:fmt(R?R.N:0),s:R?fmt(R.sl)+" retenues, "+fmt(R.grise)+" à vérifier":"cibles et profils importés"},
+    {n:"Base",v:fmt(R?R.N:0),s:R?fmt(R.sl)+" retenues, "+fmt(R.grise+R.griseC)+" à vérifier":"cibles et profils importés"},
     {n:"Radar",v:c("radar"),s:radarKeep+" retenue"+(radarKeep>1?"s":"")+" par les filtres"},
     {n:"Backlog",v:c("backlog"),s:"à contacter"},
     {n:"Envois",v:c("envoye"),t:50},
@@ -2426,7 +2475,7 @@ function fillBench(list,disp){
   $("#b-disp").value=dec(Math.round(disp*100));
   const cnt=id=>all().filter(it=>benchOf(it)&&benchOf(it).id===id).length;
   const trio=(i,f,a)=>`<div class="trio">${[0,1,2].map(j=>`<input data-b="${i}" data-f="${f}${j}" value="${dec(a[j])}" inputmode="decimal" aria-label="${f==="m"?"Marge":"Multiple"} ${["basse","centrale","haute"][j]}">`).join("")}</div>`;
-  $("#bTab").innerHTML=`<thead><tr><th>Industrie</th><th>Rev./employé QC (k$)</th><th>Rev./employé ON (k$)</th><th>Marge BAIIA % · bas, centre, haut</th><th>Multiple VE/BAIIA · bas, centre, haut</th><th style="text-align:right">Cibles</th></tr></thead><tbody>`+list.map((b,i)=>`<tr><td class="lab"><b>${esc(b.label)}</b><span>${esc(b.v?vlab(b.v):"Toutes verticales")} · SCIAN ${esc(b.naics)}</span></td><td><input data-b="${i}" data-f="qc" value="${dec(b.qc)}" inputmode="decimal" aria-label="Revenu par employé Québec : ${esc(b.label)}"></td><td><input data-b="${i}" data-f="on" value="${dec(b.on)}" inputmode="decimal" aria-label="Revenu par employé Ontario : ${esc(b.label)}"></td><td>${trio(i,"m",b.m)}</td><td>${trio(i,"x",b.x)}</td><td class="cnt">${cnt(b.id)}</td></tr><tr class="srcrow"><td colspan="6"><textarea data-b="${i}" data-f="src" aria-label="Source : ${esc(b.label)}">${esc(b.src)}</textarea></td></tr>`).join("")+`</tbody>`;
+  $("#bTab").innerHTML=`<thead><tr><th>Industrie</th><th>Rev./employé QC (k$)</th><th>Rev./employé ON (k$)</th><th>Marge BAIIA % · bas, centre, haut</th><th>Multiple VE/BAIIA · bas, centre, haut</th><th>Croissance des revenus, % par an (2019-2024)</th><th>Civil et militaire</th><th style="text-align:right">Cibles</th></tr></thead><tbody>`+list.map((b,i)=>`<tr><td class="lab"><b>${esc(b.label)}</b><span>${esc(b.v?vlab(b.v):"Toutes verticales")} · SCIAN ${esc(b.naics)}</span></td><td><input data-b="${i}" data-f="qc" value="${dec(b.qc)}" inputmode="decimal" aria-label="Revenu par employé Québec : ${esc(b.label)}"></td><td><input data-b="${i}" data-f="on" value="${dec(b.on)}" inputmode="decimal" aria-label="Revenu par employé Ontario : ${esc(b.label)}"></td><td>${trio(i,"m",b.m)}</td><td>${trio(i,"x",b.x)}</td><td><input data-b="${i}" data-f="g" value="${b.g==null?"":dec(b.g)}" inputmode="decimal" placeholder="aucune série" aria-label="Croissance des revenus : ${esc(b.label)}"></td><td style="text-align:center"><input type="checkbox" data-b="${i}" data-f="du"${b.du?" checked":""} style="width:auto" aria-label="Applications civiles et militaires : ${esc(b.label)}"></td><td class="cnt">${cnt(b.id)}</td></tr><tr class="srcrow"><td colspan="8"><textarea data-b="${i}" data-f="src" aria-label="Source : ${esc(b.label)}">${esc(b.src)}</textarea></td></tr>`).join("")+`</tbody>`;
   $("#bCal").innerHTML=`<li style="list-style:none;margin-left:-18px;color:var(--amber-rock);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">Points de calibration</li>`+BENCH_CALIB.map(c=>`<li>${esc(c)}</li>`).join("");
   $("#bSrc").innerHTML=`Sources : <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1610011701" target="_blank" rel="noopener">StatCan 16-10-0117-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1410020201" target="_blank" rel="noopener">StatCan 14-10-0202-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=3310050001" target="_blank" rel="noopener">StatCan 33-10-0500-01</a> · <a href="https://cms.cibcusmmib.com/wp-content/uploads/2026/04/US-Middle-Market-Monitor_Q1-2026.pdf" target="_blank" rel="noopener">CIBC / GF Data, T1 2026</a> · <a href="https://middlemarketgrowth.org/fall-2025-gf-data-small-deals-h1/" target="_blank" rel="noopener">GF Data, petites transactions S1 2025</a> · <a href="https://www.capstonepartners.com/insights/article-hvac-equipment-sector-ma-update/" target="_blank" rel="noopener">Capstone, CVAC 2026</a> · <a href="https://www.mccarthy.ca/en/experience/spx-technologies-inc-acquires-neptronic-inc-for-c-605m" target="_blank" rel="noopener">SPX / Neptronic</a>`;
 }
@@ -2439,6 +2488,8 @@ $("#bForm").addEventListener("submit",async e=>{
   $$("#bTab [data-b]").forEach(el=>{
     const b=base[+el.dataset.b],f=el.dataset.f;if(!b)return;
     if(f==="src"){b.src=str(el.value).slice(0,600);return;}
+    if(f==="du"){b.du=el.checked;return;}
+    if(f==="g"){b.g=str(el.value)===""?null:num(el.value);return;}
     const v=num(el.value);if(v==null||v<0){bad=bad||el;return;}
     if(f==="qc"||f==="on")b[f]=v;else b[f[0]][+f[1]]=v;
   });
