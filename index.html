@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Basalt — Tracker de sourcing</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Basalte pâle : page en pierre claire, intérieur du classeur en papier, tickets en roche foncée, ambre réservé à l'action.
+     Layout : pilotage (chiffres, onglets, filtres) en haut, classeur pleine largeur, entonnoir Sankey en dernier onglet. */
+  color-scheme: light;
+  --page:#E4E5E7;
+  --paper:#FBFBFA;
+  --paper-alt:#F4F4F3;
+  --paper-calc:#EEF0F2;
+  --paper-hover:#FFF7E8;
+  --ink:#16181B;
+  --ink-2:#454A52;
+  --ink-3:#6B717B;
+  --rule:#CDD0D5;
+  --rule-soft:#E0E2E5;
+  --rock:#1E2125;
+  --rock-2:#282C31;
+  --rock-3:#33383F;
+  --rock-ink:#EEF0F2;
+  --rock-ink-2:#B3B9C1;
+  --rock-ink-3:#8A919B;
+  --rock-rule:#3B4047;
+  --amber:#C08A2E;
+  --amber-ink:#7E5710;
+  --amber-soft:#F4E8D0;
+  --amber-rock:#E2B565;
+  --amber-rock-soft:#3A3123;
+  --keep:#2a78d6; --check:#eb6834; --out:#A9AEB5;
+  --keep-ink:#1C5BA6; --check-ink:#A5461C; --out-ink:#5B6169;
+  --danger:#A4443A;
+  /* provenance des chiffres : estimé = violet, vérifié = vert */
+  --est:#6B46A3; --est-bg:#F1EBF9; --est-rule:#D8C9EE;
+  --ver:#1D7348; --ver-bg:#E2F1E8; --ver-rule:#B9DAC6;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+html,body{margin:0;padding:0}
+body{background:var(--page);color:var(--ink-2);font:13px/1.45 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1580px;margin:0 auto;padding:26px 24px 72px}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font:700 25px/1.1 var(--f-display);letter-spacing:-.01em;color:var(--ink);text-wrap:balance}
+.sub{margin-top:6px;font-size:12px;color:var(--ink-3);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dbstate{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;border:1px solid var(--rule);background:var(--paper);font-size:11px;color:var(--ink-3)}
+.dbstate i{width:7px;height:7px;border-radius:50%;background:var(--out)}
+.dbstate.ok i{background:#2F8A57}
+.dbstate.err i{background:var(--danger)}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:8px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);font-size:12.5px;font-weight:600;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--amber)}
+.btn.dark{background:var(--rock);border-color:var(--rock);color:var(--rock-ink)}
+.btn.dark:hover{border-color:var(--amber);color:#fff}
+.btn.amber{background:var(--amber-soft);border-color:#DDBF85;color:var(--amber-ink)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 9px;font-size:11.5px;border-radius:7px}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn[disabled]{opacity:.5;cursor:default}
+
+.banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 16px;margin-bottom:14px;border-radius:10px;background:var(--rock);color:var(--rock-ink-2);font-size:12.5px}
+.banner b{color:var(--rock-ink)}
+.banner.err{border-left:4px solid var(--danger)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:18px}
+.stat{background:var(--paper);border:1px solid var(--rule-soft);border-radius:10px;padding:12px 15px}
+.stat .l{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.stat .v{margin-top:4px;font:700 24px/1.1 var(--f-display);color:var(--ink);font-variant-numeric:tabular-nums}
+.stat .v small{font:500 12px var(--f-body);color:var(--ink-3)}
+.stat .s{margin-top:2px;font-size:11px;color:var(--ink-3)}
+.stat .bar{margin-top:8px;height:3px;border-radius:2px;background:var(--rule-soft);overflow:hidden}
+.stat .bar i{display:block;height:100%;background:var(--amber)}
+
+/* tabs */
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--rule);margin-bottom:14px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:9px 1px;font-size:13px;font-weight:600;color:var(--ink-3);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.tab .n{font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--paper);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tab.on{color:var(--ink);border-color:var(--amber)}
+.tab.on .n{background:var(--rock);color:var(--amber-rock)}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;margin-bottom:16px;background:var(--paper);border:1px solid var(--rule-soft);border-radius:10px}
+.filters input[type=search]{flex:1 1 220px;min-width:180px;padding:7px 10px;border:1px solid var(--rule);border-radius:7px;background:#fff;color:var(--ink);font-size:12.5px}
+.filters select{padding:6px 8px;border:1px solid var(--rule);border-radius:7px;background:#fff;color:var(--ink);font-size:12px}
+.fsep{width:1px;height:22px;background:var(--rule-soft)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.fchip{border:1px solid var(--rule);background:#fff;color:var(--ink-2);padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:500}
+.fchip.on{background:var(--rock);border-color:var(--rock);color:var(--rock-ink)}
+.fchip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.fscore{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2)}
+.fscore input{width:96px;accent-color:var(--amber)}
+.fscore b{font-variant-numeric:tabular-nums;min-width:18px;color:var(--ink)}
+.fcount{margin-left:auto;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+
+/* panels */
+.panel{display:none}
+.panel.on{display:block}
+.ptool{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.ptool .intro{max-width:640px;font-size:12.5px;color:var(--ink-2)}
+.ptool .intro b{color:var(--ink)}
+.ptool .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;padding:6px 11px;font-size:11.5px;font-weight:600;color:var(--ink-3)}
+.seg button+button{border-left:1px solid var(--rule-soft)}
+.seg button.on{background:var(--rock);color:var(--rock-ink)}
+
+/* ingestion */
+.ingest{background:var(--rock);color:var(--rock-ink-2);border-radius:12px;padding:16px;margin-bottom:14px}
+.ingest .head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.ingest .head b{color:var(--rock-ink);font:600 14px var(--f-display)}
+.ingest label{font-size:11px;color:var(--rock-ink-3);display:flex;align-items:center;gap:8px}
+.ingest select,.ingest textarea{background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px}
+.ingest select{padding:6px 8px;font-size:12px}
+.ingest textarea{width:100%;min-height:150px;padding:10px 12px;font:12px/1.5 var(--f-mono);resize:vertical}
+.ingest .seg{background:var(--rock-2);border-color:var(--rock-rule)}
+.ingest .seg button{color:var(--rock-ink-3)}
+.ingest .seg button+button{border-color:var(--rock-rule)}
+.ingest .seg button.on{background:var(--amber-rock-soft);color:var(--amber-rock)}
+.ingest .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.ingest .hint{font-size:11.5px;color:var(--rock-ink-3);max-width:620px}
+.msg{font-size:12px;margin-top:8px}
+.msg.ok{color:var(--amber-rock)}
+.msg.err{color:#F0A79B}
+.prev{margin-top:14px;border-top:1px solid var(--rock-rule);padding-top:14px}
+.prev .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:12px}
+.prev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.pcard{background:var(--rock-2);border:1px solid var(--rock-rule);border-radius:9px;padding:11px 12px;font-size:11.5px}
+.pcard.off{opacity:.45}
+.pcard .pc-top{display:flex;gap:9px;align-items:flex-start}
+.pcard .pc-top input{margin-top:3px;accent-color:var(--amber)}
+.pcard .pc-name{color:var(--rock-ink);font-weight:600;font-size:13px}
+.pcard .pc-meta{color:var(--rock-ink-3);margin-top:2px}
+.pcard .pc-kv{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;color:var(--rock-ink-2);font-variant-numeric:tabular-nums}
+.pcard .pc-kv span b{color:var(--rock-ink-3);font-weight:500}
+.pcard .dup{margin-top:8px;color:var(--amber-rock)}
+
+/* bulk */
+.bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin-bottom:10px;background:var(--rock);border-radius:9px;color:var(--rock-ink-2);font-size:12px}
+.bulk b{color:var(--rock-ink);margin-right:6px}
+.bulk .btn{background:var(--rock-2);border-color:var(--rock-rule);color:var(--rock-ink)}
+.bulk .btn:hover{border-color:var(--amber-rock)}
+.bulk .btn.danger{color:#F0A79B}
+.bulk .btn.danger.armed{background:var(--danger);color:#fff}
+
+/* sheet : cadre foncé, intérieur pâle */
+.sheet-wrap{position:relative;border-radius:11px;background:var(--rock);padding:0 0 6px;box-shadow:0 1px 2px rgba(20,22,25,.12)}
+.sheet-scroll{overflow:auto;max-height:72vh;border-radius:11px 11px 6px 6px}
+.sheet-wrap::before,.sheet-wrap::after{content:"";position:absolute;top:0;bottom:6px;width:36px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:6}
+.sheet-wrap::before{left:var(--stick,276px);background:linear-gradient(90deg,rgba(30,33,37,.16),transparent)}
+.sheet-wrap::after{right:0;background:linear-gradient(270deg,rgba(30,33,37,.18),transparent);border-radius:0 11px 6px 0}
+.sheet-wrap.fl::before,.sheet-wrap.fr::after{opacity:1}
+.sheet-wrap .fb{position:absolute;left:0;right:0;bottom:6px;height:30px;pointer-events:none;background:linear-gradient(0deg,rgba(251,251,250,.95),transparent);opacity:0;transition:opacity .2s;z-index:5}
+.sheet-wrap.fbt .fb{opacity:1}
+table.sheet{border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:12.5px;color:var(--ink)}
+.sheet th{background:var(--rock);color:var(--rock-ink-2);font-weight:600;text-align:left;position:sticky;z-index:3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet tr.g th{top:0;height:26px;padding:0 10px;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--rock-ink-3);border-bottom:1px solid var(--rock-rule)}
+.sheet tr.g th+th{border-left:1px solid var(--rock-rule)}
+.sheet tr.g th.calcg{color:var(--amber-rock)}
+.sheet tr.c th{top:26px;height:34px;padding:0 10px;font-size:11.5px;border-bottom:2px solid var(--amber)}
+.sheet tr.c th[data-sort]{cursor:pointer}
+.sheet tr.c th[data-sort]:hover{color:#fff}
+.sheet tr.c th .fx{font-style:normal;color:var(--amber-rock);font-family:var(--f-mono);font-size:10.5px;margin-left:4px}
+.sheet tr.c th .ar{color:var(--amber-rock);margin-left:3px}
+.sheet td{height:34px;padding:0;background:var(--paper);border-bottom:1px solid var(--rule-soft);border-right:1px solid var(--rule-soft);white-space:nowrap;overflow:hidden;vertical-align:middle}
+.sheet tbody tr:nth-child(even) td{background:var(--paper-alt)}
+.sheet tbody tr:hover td{background:var(--paper-hover)}
+.sheet td.calc{background:var(--paper-calc);padding:0 10px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.sheet tbody tr:nth-child(even) td.calc{background:#E9EBEE}
+.sheet tbody tr.out td:not(.stk){color:var(--ink-3)}
+.stk{position:sticky;z-index:2}
+.sheet th.stk{z-index:4}
+.sheet td.s1{box-shadow:inset 3px 0 0 var(--g,var(--out)),1px 0 0 var(--rule)}
+tr.keep{--g:var(--keep)} tr.check{--g:var(--check)} tr.out{--g:var(--out)}
+.cell{display:block;width:100%;height:33px;border:0;background:transparent;padding:0 10px;font:inherit;color:inherit;border-radius:0;min-width:0}
+.cell:hover{background:rgba(192,138,46,.07)}
+.cell:focus{outline:2px solid var(--amber);outline-offset:-2px;background:#fff}
+.cell::placeholder{color:#A3A8AF}
+select.cell{appearance:none;-webkit-appearance:none;cursor:pointer;text-overflow:ellipsis}
+select.cell.blank{color:#A3A8AF}
+input.cell.num{text-align:right;font-variant-numeric:tabular-nums}
+.selc{text-align:center}
+.selc input,th.selc input{accent-color:var(--amber);width:14px;height:14px;cursor:pointer;vertical-align:middle}
+.nm{display:flex;align-items:center}
+.nm .cell{font-weight:600}
+.nm .open{flex:none;width:26px;height:26px;margin-right:5px;border:1px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink-2);font-size:12px;line-height:1}
+.nm .open:hover{background:var(--rock);color:var(--amber-rock);border-color:var(--rock)}
+.score{display:flex;align-items:center;gap:7px}
+.score b{min-width:22px;text-align:right;color:var(--ink);font-weight:600}
+.sbar{flex:1;height:5px;border-radius:3px;background:#DADDE1;overflow:hidden}
+.sbar i{display:block;height:100%;background:var(--rock)}
+tr.out .score b{color:var(--ink-3)}
+tr.out .sbar i{background:var(--out)}
+.vchip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 6px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid}
+.vchip i{font-style:normal;font-size:10px;width:13px;height:13px;border-radius:50%;display:inline-grid;place-items:center;color:#fff}
+.vchip.keep{color:var(--keep-ink);background:#E6EFFA;border-color:#BFD3EF}
+.vchip.keep i{background:var(--keep)}
+.vchip.check{color:var(--check-ink);background:#FCEBE3;border-color:#F1C6B2}
+.vchip.check i{background:var(--check)}
+.vchip.out{color:var(--out-ink);background:#ECEDEF;border-color:#D4D7DB}
+.vchip.out i{background:#8D939B}
+.tier{display:inline-block;min-width:20px;text-align:center;padding:1px 6px;border-radius:5px;font:600 11px var(--f-mono);background:#fff;border:1px solid var(--rule)}
+.meter{display:inline-block;width:38px;height:5px;border-radius:3px;background:#DADDE1;overflow:hidden;vertical-align:middle;margin-right:6px}
+.meter i{display:block;height:100%;background:var(--amber)}
+.warnv{color:var(--danger);font-weight:600}
+/* provenance : estimé (violet, ≈, italique) ou vérifié (vert, ✓) */
+.pv{display:inline-flex;align-items:baseline;gap:4px;padding:1px 7px;border-radius:5px;border:1px solid;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;line-height:1.5}
+.pv.e{color:var(--est);background:var(--est-bg);border-color:var(--est-rule);font-style:italic}
+.pv.v{color:var(--ver);background:var(--ver-bg);border-color:var(--ver-rule);font-weight:600}
+.pv.gap{box-shadow:inset 0 -2px 0 var(--check)}
+.sheet td.pcw{position:relative}
+input.cell.pcell{padding-right:28px}
+input.cell.pcell::placeholder{color:var(--est);font-style:italic;opacity:.9}
+input.cell.pe{color:var(--est);font-style:italic;background:var(--est-bg)}
+input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
+.ptog{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:19px;height:19px;padding:0;border-radius:5px;border:1px solid var(--rule);background:#fff;font-size:11px;line-height:17px;text-align:center}
+.ptog.e{color:var(--est);border-color:var(--est-rule)}
+.ptog.v{color:var(--ver);border-color:var(--ver-rule)}
+.ptog:hover{border-color:var(--amber)}
+.plegend{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* hypothèses par industrie */
+.bwrap{max-height:56vh;overflow:auto;border:1px solid var(--rock-rule);border-radius:9px}
+.btab{width:100%;min-width:860px;border-collapse:collapse;font-size:12px;color:var(--rock-ink-2)}
+.btab th{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--rock-ink-3);text-align:left;font-weight:600;padding:8px 8px;border-bottom:1px solid var(--rock-rule);position:sticky;top:0;background:var(--rock);z-index:1}
+.btab td{padding:8px 8px 4px;vertical-align:top}
+.btab td.lab b{color:var(--rock-ink);font-weight:600;display:block}
+.btab td.lab span{font:10.5px var(--f-mono);color:var(--rock-ink-3)}
+.btab td.cnt{font-variant-numeric:tabular-nums;color:var(--rock-ink-3);text-align:right}
+.btab input{width:54px;background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:6px;padding:4px 6px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.btab .trio{display:flex;gap:4px}
+.btab tr.srcrow td{padding:0 8px 10px;border-bottom:1px solid var(--rock-3)}
+.btab tr.srcrow textarea{width:100%;min-height:36px;background:transparent;border:1px dashed var(--rock-rule);color:var(--rock-ink-3);border-radius:6px;padding:5px 7px;font:11px/1.45 var(--f-body);resize:vertical}
+.bmeth{font-size:12px;line-height:1.55;color:var(--rock-ink-2);margin:0 0 12px}
+.bmeth b{color:var(--rock-ink)}
+.bcal{margin:12px 0 0;padding-left:18px;font-size:11.5px;color:var(--rock-ink-2);line-height:1.5}
+.bcal li{margin-bottom:4px}
+.bsrc{font-size:11px;color:var(--rock-ink-3);line-height:1.6;margin-top:10px}
+.bsrc a{color:var(--amber-rock)}
+.modal .pvrow{display:grid;grid-template-columns:120px 150px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.modal .pvrow label{font-size:11px;color:var(--rock-ink-3)}
+.modal .pvrow select,.modal .pvrow input{background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:6px 8px;font-size:12px;width:100%;min-width:0}
+.modal .estbox{background:var(--rock-2);border:1px solid var(--rock-rule);border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.6;color:var(--rock-ink-2);margin:10px 0 4px}
+.modal .estbox b{color:var(--rock-ink)}
+.modal .estbox .why{color:var(--rock-ink-3);font-size:11.5px}
+.modal .pv.e{background:#2F2640;border-color:#4A3B66;color:#CDB8F0}
+.modal .pv.v{background:#1E3A2C;border-color:#2F5B44;color:#A8DDBD}
+@media (max-width:640px){.modal .pvrow{grid-template-columns:1fr 1fr}.modal .pvrow input{grid-column:1/-1}}
+.act{display:flex;gap:5px;padding:0 6px}
+.act .btn{padding:4px 8px;font-size:11px}
+.empty{padding:34px 16px;text-align:center;color:var(--ink-3);font-size:12.5px;background:var(--paper)}
+.sheet-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 12px 2px;font-size:11px;color:var(--rock-ink-3)}
+.sheet-foot .fx{color:var(--amber-rock);font-family:var(--f-mono)}
+
+/* tickets foncés */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px}
+.ticket{position:relative;background:var(--rock);border:1px solid var(--rock);border-radius:10px;padding:13px 14px 12px 16px;color:var(--rock-ink-2);font-size:11.5px;box-shadow:0 1px 2px rgba(20,22,25,.16);cursor:pointer;transition:border-color .15s}
+.ticket:hover{border-color:var(--amber)}
+.ticket::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 2px 2px 0;background:var(--g,var(--out))}
+.ticket.keep{--g:var(--keep)} .ticket.check{--g:var(--check)} .ticket.out{--g:var(--out)}
+.t-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.t-name{color:var(--rock-ink);font-weight:600;font-size:13.5px;line-height:1.3}
+.t-name small{color:var(--rock-ink-3);font-weight:400}
+.t-score{font:700 15px var(--f-display);color:var(--amber-rock);font-variant-numeric:tabular-nums}
+.t-meta{margin-top:3px;color:var(--rock-ink-3);line-height:1.4}
+.t-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
+.ticket .vchip.keep{background:#1F3550;border-color:#2E5583;color:#A9CBF3}
+.ticket .vchip.check{background:#4A2C1F;border-color:#7A4329;color:#F6B89A}
+.ticket .vchip.out{background:var(--rock-3);border-color:var(--rock-rule);color:var(--rock-ink-2)}
+.t-flags{color:var(--rock-ink-3);font-size:10.5px}
+.t-contact{margin-top:8px;color:var(--rock-ink-2)}
+.t-contact.miss{color:var(--rock-ink-3);font-style:italic}
+.t-send{display:flex;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid var(--rock-rule);color:var(--rock-ink-3)}
+.t-send b{color:var(--rock-ink-2);font-weight:600}
+.due{color:#F6B89A;font-weight:600}
+.t-cta{display:flex;gap:6px;margin-top:10px}
+.t-cta .btn{flex:1;justify-content:center;background:var(--rock-2);border-color:var(--rock-rule);color:var(--rock-ink);padding:6px 8px;font-size:11px}
+.t-cta .btn:hover{border-color:var(--amber-rock)}
+.t-cta .btn.go{background:var(--amber-rock-soft);border-color:#6B5527;color:var(--amber-rock)}
+.board{display:grid;grid-template-columns:repeat(4,minmax(250px,1fr));gap:12px;overflow-x:auto}
+.col{background:var(--paper);border:1px solid var(--rule-soft);border-radius:11px;padding:11px;min-height:220px;display:flex;flex-direction:column;gap:10px}
+.col.over{border-color:var(--amber);background:var(--paper-hover)}
+.col-h{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px}
+.col-h span{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.col-h b{font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.col .ticket{cursor:grab}
+.col .ticket.drag{opacity:.4}
+.col .none{font-size:11.5px;color:var(--ink-3);text-align:center;padding:24px 6px;border:1px dashed var(--rule);border-radius:9px}
+
+/* entonnoir */
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:14px}
+.ins{padding:11px 14px;border-radius:9px;border:1.5px dashed var(--rule);background:var(--paper);font-size:12.5px;color:var(--ink);line-height:1.45}
+.ins.keep{border-color:var(--keep)} .ins.check{border-color:var(--check)} .ins.out{border-color:#8D939B}
+.skbox{position:relative;background:var(--paper);border:1px solid var(--rule-soft);border-radius:12px;padding:16px 18px 12px;margin-bottom:16px}
+.sklegend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:10px;font-size:12px;color:var(--ink-2)}
+.sklegend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.sklegend .hint{margin-left:auto;color:var(--ink-3);font-size:11.5px}
+.skscroll{overflow-x:auto}
+#sankey svg{display:block}
+.sk-col{font:600 10px var(--f-body);letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3)}
+.sk-lab{font:500 11.5px var(--f-body);fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.sk-lab tspan{fill:var(--ink-3);font-variant-numeric:tabular-nums}
+.sk-link{transition:fill-opacity .15s;cursor:default}
+.sk-node{cursor:pointer}
+.sk-node rect{fill:var(--rock);transition:fill .15s}
+.sk-node:hover rect{fill:var(--amber)}
+.sk-node.on rect{fill:var(--amber)}
+.sk-tip{position:absolute;pointer-events:none;background:var(--rock);color:var(--rock-ink);font-size:11.5px;padding:7px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:10}
+.sk-tip b{color:var(--amber-rock)}
+.focusbar{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:12.5px;color:var(--ink-2)}
+.focusbar b{color:var(--ink)}
+
+/* modals : tickets foncés */
+.overlay{position:fixed;inset:0;background:rgba(18,20,23,.48);display:flex;justify-content:center;align-items:flex-start;padding:4vh 16px;overflow-y:auto;z-index:50}
+.modal{width:100%;max-width:760px;background:var(--rock);color:var(--rock-ink-2);border-radius:14px;padding:22px 24px;margin-bottom:4vh;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal h2{margin:0;font:600 18px var(--f-display);color:var(--rock-ink)}
+.modal .mh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.modal .derived{margin-top:4px;font-size:11.5px;color:var(--rock-ink-3)}
+.modal .derived b{color:var(--amber-rock)}
+.modal fieldset{border:0;border-top:1px solid var(--rock-rule);margin:0;padding:12px 0 2px}
+.modal legend{padding:0 8px 0 0;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber-rock)}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 12px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.w2{grid-column:span 2}.f.w4{grid-column:1/-1}
+.f label{font-size:10.5px;color:var(--rock-ink-3)}
+.f input,.f select,.f textarea{width:100%;background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:7px 9px;font-size:12.5px}
+.f textarea{min-height:58px;resize:vertical;line-height:1.45}
+.f textarea.raw{font:11.5px/1.5 var(--f-mono);min-height:90px}
+.modal .mf{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rock-rule)}
+.modal .mf .right{display:flex;gap:8px}
+.modal .btn{background:var(--rock-2);border-color:var(--rock-rule);color:var(--rock-ink)}
+.modal .btn:hover{border-color:var(--amber-rock)}
+.modal .btn.go{background:var(--amber-rock-soft);border-color:#6B5527;color:var(--amber-rock)}
+.modal .btn.danger{color:#F0A79B}
+.modal .btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.modal .x{background:none;border:0;color:var(--rock-ink-3);font-size:20px;line-height:1;padding:2px 6px}
+.modal .note{font-size:11.5px;color:var(--rock-ink-3);margin:4px 0 0}
+
+.ingest input[type=text]{background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:6px 9px;font-size:12px;min-width:250px}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px 12px;margin-top:4px}
+.mapgrid label{display:flex;flex-direction:column;align-items:stretch;gap:4px;font-size:11px;color:var(--rock-ink-3)}
+.mapgrid label.req{color:var(--amber-rock)}
+.mapgrid select{width:100%}
+.steps{background:var(--paper);border:1px solid var(--rule-soft);border-radius:12px;padding:14px 16px 6px;margin-bottom:16px}
+.st-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.st-head b{font:600 14px var(--f-display);color:var(--ink)}
+.st-head>span{font-size:12px;color:var(--ink-3)}
+.st-head .right{margin-left:auto;display:flex;gap:8px}
+.st-head select{padding:6px 8px;border:1px solid var(--rule);border-radius:7px;background:#fff;font-size:12px;color:var(--ink)}
+.st-row{display:grid;grid-template-columns:22px 18px minmax(160px,1fr) minmax(280px,2.2fr) 140px minmax(230px,1.5fr) 82px;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rule-soft)}
+.st-row.off{opacity:.5}
+.st-n{font:700 13px var(--f-display);color:var(--ink-3);text-align:center}
+.st-row input[type=checkbox]{accent-color:var(--amber);width:15px;height:15px}
+.st-row input[type=text],.st-row input.num,.st-row select{padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:#fff;font-size:12px;color:var(--ink);min-width:0}
+.st-row input.num{width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.st-rule{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.st-rule .fchip{padding:2px 8px;font-size:11px}
+.st-unk{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.st-count{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.st-count b{color:var(--ink)}
+.st-count .cut{color:var(--danger);font-weight:600}
+.st-btns{display:flex;gap:4px;justify-content:flex-end}
+.st-btns button{width:24px;height:24px;border:1px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink-2);font-size:12px;line-height:1;padding:0}
+.st-btns button:hover{border-color:var(--amber)}
+.lots{margin-top:18px}
+.lots table{border-collapse:collapse;width:100%;max-width:860px;background:var(--paper);border-radius:9px;overflow:hidden;font-size:12px;color:var(--ink-2)}
+.lots th,.lots td{text-align:left;padding:7px 12px;border-bottom:1px solid var(--rule-soft)}
+.lots th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+@media (max-width:1180px){.st-row{grid-template-columns:22px 18px 1fr}.st-row>*:nth-child(n+4){grid-column:3}}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--rock);color:var(--rock-ink);padding:10px 16px;border-radius:9px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:80;max-width:min(560px,90vw)}
+.toast.err{border-left:4px solid var(--danger)}
+
+@media (max-width:1100px){.stats{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.fg{grid-template-columns:1fr 1fr}.f.w2{grid-column:1/-1}.wrap{padding:18px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Sourcing · Basalt Capital</h1>
+      <div class="sub">Radar → Backlog → Envois → Suivi → Entonnoir <span class="dbstate" id="dbState"><i></i><span>Connexion à la base…</span></span></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnThese">Thèse et seuils</button>
+      <button class="btn" id="btnBench">Hypothèses par industrie</button>
+      <button class="btn" id="btnCopy">Copier les données (JSON)</button>
+      <button class="btn" id="btnImport">Importer un fichier</button>
+      <input type="file" id="fileImport" accept="application/json,.json" hidden>
+      <button class="btn ghost" id="btnLogout" hidden>Se déconnecter</button>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+  <section class="stats" id="stats" aria-label="Chiffres du pipeline"></section>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab" data-tab="radar" role="tab">Radar <span class="n" id="n-radar">0</span></button>
+    <button class="tab" data-tab="backlog" role="tab">Backlog <span class="n" id="n-backlog">0</span></button>
+    <button class="tab" data-tab="envois" role="tab">Envois <span class="n" id="n-envois">0</span></button>
+    <button class="tab" data-tab="suivi" role="tab">Suivi <span class="n" id="n-suivi">0</span></button>
+    <button class="tab" data-tab="entonnoir" role="tab">Entonnoir</button>
+  </nav>
+
+  <section class="filters" aria-label="Filtres">
+    <input type="search" id="fq" placeholder="Rechercher : nom, ville, secteur, contact…" aria-label="Recherche">
+    <div class="chips" id="fVert" aria-label="Verticales"></div>
+    <span class="fsep"></span>
+    <div class="chips" id="fGrp" aria-label="Verdict"></div>
+    <span class="fsep"></span>
+    <select id="fCanal" aria-label="Canal"></select>
+    <select id="fProv" aria-label="Province"><option value="">Toutes provinces</option><option>QC</option><option>ON</option><option>Autre</option></select>
+    <select id="fDays" aria-label="Période d'ajout"><option value="0">Toute période</option><option value="7">Ajoutées depuis 7 jours</option><option value="30">Depuis 30 jours</option><option value="90">Depuis 90 jours</option></select>
+    <label class="fscore" for="fScore">Score ≥ <input type="range" id="fScore" min="0" max="90" step="5" value="0"><b id="fScoreV">0</b></label>
+    <button class="btn ghost sm" id="fReset">Réinitialiser</button>
+    <span class="fcount" id="fCount"></span>
+  </section>
+
+  <!-- RADAR -->
+  <section class="panel" id="panel-radar">
+    <div class="ptool">
+      <div class="intro"><b>Le marché brut.</b> Colle un ticket JSON produit par /basalt-ticket ou importe un fichier : ta thèse calcule le verdict. Les cibles retenues montent au Backlog.</div>
+      <div class="right">
+        <button class="btn dark" id="btnIngest">+ Coller des annonces</button>
+        <button class="btn" data-addrow="radar">+ Ajouter une ligne</button>
+      </div>
+    </div>
+    <div class="ingest" id="ingest" hidden>
+      <div class="head">
+        <b>Coller des annonces ou des listes</b>
+        <div class="seg" id="ingMode"><button data-m="json" class="on">JSON (ticket /basalt-ticket)</button></div>
+      </div>
+      <div class="head">
+        <label for="ingCanal">Canal <select id="ingCanal"></select></label>
+        <label for="ingDest">Ajouter à <select id="ingDest"><option value="radar">Radar</option><option value="backlog">Backlog</option></select></label>
+      </div>
+      <textarea id="ingText" aria-label="Texte à analyser" placeholder="Colle ici une ou plusieurs annonces (texte copié depuis Index, un site de courtier, ICRIQ, un courriel…)"></textarea>
+      <div class="foot">
+        <span class="hint" id="ingHint">Colle un ticket JSON (ou un tableau) produit par /basalt-ticket. Les anciens badges sont convertis en colonnes. Tu vérifies l'aperçu avant l'ajout.</span>
+        <button class="btn amber" id="ingGo">Lire le JSON</button>
+      </div>
+      <div class="msg" id="ingMsg"></div>
+      <div class="prev" id="ingPrev" hidden></div>
+    </div>
+    <div class="bulk" id="bulk-radar" hidden></div>
+    <div id="sheet-radar"></div>
+  </section>
+
+  <!-- BACKLOG -->
+  <section class="panel" id="panel-backlog">
+    <div class="ptool">
+      <div class="intro"><b>Cibles qualifiées, pas encore contactées.</b> Chaque cellule se modifie sur place. Les colonnes marquées <span style="font-family:var(--f-mono);color:var(--amber-ink)">ƒ</span> se calculent seules à partir des autres et de ta thèse.</div>
+      <div class="right">
+        <button class="btn" data-addrow="backlog">+ Ajouter une ligne</button>
+      </div>
+    </div>
+    <div class="bulk" id="bulk-backlog" hidden></div>
+    <div id="sheet-backlog"></div>
+  </section>
+
+  <!-- ENVOIS -->
+  <section class="panel" id="panel-envois">
+    <div class="ptool"><div class="intro"><b>Cibles contactées</b>, en attente de réponse ou de relance. Une relance échue s'affiche en orange.</div></div>
+    <div class="tgrid" id="grid-envois"></div>
+  </section>
+
+  <!-- SUIVI -->
+  <section class="panel" id="panel-suivi">
+    <div class="ptool"><div class="intro"><b>Réponses positives</b> et progression vers l'acquisition. Glisse les tickets d'une colonne à l'autre.</div></div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- ENTONNOIR -->
+  <section class="panel" id="panel-entonnoir">
+    <div class="ptool">
+      <div class="intro"><b>Le tri brutal.</b> Importe des centaines ou des milliers de profils d'entreprises (REQ, ICRIQ, listes Excel). Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. Ce qui reste à la fin est ta shortlist, à envoyer au Radar.</div>
+      <div class="right"><button class="btn dark" id="btnUniv">+ Importer des profils</button></div>
+    </div>
+    <div class="ingest" id="univBox" hidden>
+      <div class="head"><b>Importer des profils d'entreprises</b><label for="univSrc">Nom du lot <input type="text" id="univSrc" placeholder="ex. REQ manufacturier, nov. 2026"></label></div>
+      <div class="head"><span class="hint">Colle un tableau copié d'Excel avec sa ligne d'en-têtes, un CSV ou du JSON. Ou choisis un fichier .xlsx, .csv ou .json.</span><span><button type="button" class="btn sm" id="univFileBtn">Choisir un fichier</button><input type="file" id="univFile" accept=".csv,.tsv,.txt,.json,.xlsx,.xls" hidden></span></div>
+      <textarea id="univText" aria-label="Tableau de profils" placeholder="Nom, Ville, Province, Fondation, Employés, CA… (une ligne par entreprise)"></textarea>
+      <div class="foot"><span class="hint">Tu vérifies quelle colonne correspond à quoi avant l'import. Les montants en dollars sont convertis en M$.</span><button class="btn amber" id="univRead">Lire le tableau</button></div>
+      <div class="msg" id="univMsg"></div>
+      <div id="univMap" hidden></div>
+    </div>
+    <div class="insights" id="triIns"></div>
+    <div class="skbox">
+      <div class="sklegend" id="skLegend"></div>
+      <div class="skscroll"><div id="sankey"></div></div>
+      <div class="sk-tip" id="skTip" hidden></div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="focusbar" id="focusbar"></div>
+    <div id="triList"></div>
+    <div class="lots" id="lots"></div>
+  </section>
+</div>
+
+<!-- Fiche (ticket) -->
+<div class="overlay" id="ovTicket" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+    <form id="tForm">
+      <div class="mh">
+        <div><h2 id="tTitle">Fiche</h2><div class="derived" id="tDerived"></div></div>
+        <button type="button" class="x" data-close aria-label="Fermer">×</button>
+      </div>
+      <fieldset><legend>Identité</legend>
+        <div class="fg">
+          <div class="f w2"><label for="t-name">Entreprise</label><input id="t-name" required></div>
+          <div class="f"><label for="t-suffix">Suffixe légal</label><input id="t-suffix" placeholder="inc."></div>
+          <div class="f"><label for="t-stage">Étape</label><select id="t-stage"></select></div>
+          <div class="f"><label for="t-ref">Réf. annonce</label><input id="t-ref"></div>
+          <div class="f"><label for="t-neq">NEQ</label><input id="t-neq"></div>
+          <div class="f w2"><label for="t-site">Site web</label><input id="t-site" placeholder="entreprise.ca"></div>
+          <div class="f"><label for="t-verticale">Verticale</label><select id="t-verticale"></select></div>
+          <div class="f w2"><label for="t-soussecteur">Sous-secteur</label><input id="t-soussecteur"></div>
+          <div class="f"><label for="t-canal">Canal</label><select id="t-canal"></select></div>
+          <div class="f"><label for="t-ville">Ville</label><input id="t-ville"></div>
+          <div class="f"><label for="t-province">Province</label><select id="t-province"></select></div>
+          <div class="f w2"><label for="t-region">Région administrative</label><input id="t-region"></div>
+          <div class="f"><label for="t-priorite">Priorité</label><select id="t-priorite"></select></div>
+          <div class="f w2"><label for="t-role">Rôle potentiel</label><select id="t-role"></select></div>
+          <div class="f"><label for="t-ageFond">Âge du fondateur</label><input id="t-ageFond" inputmode="numeric"></div>
+        </div>
+      </fieldset>
+      <fieldset><legend>Taille et transaction</legend>
+        <div class="fg">
+          <div class="f"><label for="t-fondation">Année de fondation</label><input id="t-fondation" inputmode="numeric"></div>
+          <div class="f"><label for="t-employes">Employés</label><input id="t-employes" placeholder="50-99"></div>
+          <div class="f"><label for="t-ca">CA (M$)</label><input id="t-ca" placeholder="12 ou 10-15"></div>
+          <div class="f"><label for="t-baiia">BAIIA (M$)</label><input id="t-baiia" placeholder="2.5 ou 2-3"></div>
+          <div class="f"><label for="t-confTaille">Confiance taille</label><select id="t-confTaille"></select></div>
+          <div class="f"><label for="t-prix">Prix demandé (M$)</label><input id="t-prix" inputmode="decimal"></div>
+          <div class="f"><label for="t-transaction">Transaction</label><select id="t-transaction"></select></div>
+          <div class="f"><label for="t-raison">Raison de vente</label><select id="t-raison"></select></div>
+          <div class="f"><label for="t-mix">Mix clients</label><select id="t-mix"></select></div>
+          <div class="f"><label for="t-recurrence">Revenus récurrents</label><select id="t-recurrence"></select></div>
+          <div class="f"><label for="t-fit">Fit</label><select id="t-fit"></select></div>
+          <div class="f"><label for="t-exclusion">Exclusion manuelle</label><select id="t-exclusion"></select></div>
+          <div class="f w4"><label for="t-bench">Industrie de référence (hypothèses de revenu par employé, de marge et de multiple)</label><select id="t-bench"></select></div>
+        </div>
+      </fieldset>
+      <fieldset><legend>Provenance des chiffres</legend>
+        <p class="note" style="margin:0 0 8px">Vérifié = chiffre réel et sourcé (site, registre, communiqué, appel, NDA). Estimé = calcul, annuaire ou base de données tierce. Seul un chiffre vérifié remplace l'estimation dans les tableaux.</p>
+        <div id="tProv"></div>
+        <div class="estbox" id="tEst"></div>
+      </fieldset>
+      <fieldset><legend>Thèse</legend>
+        <div class="fg">
+          <div class="f w4"><label for="t-bridge">Pont vers un marché adjacent</label><textarea id="t-bridge"></textarea></div>
+          <div class="f w4"><label for="t-owner">Actionnariat et relève</label><textarea id="t-owner"></textarea></div>
+          <div class="f w4"><label for="t-flags">Red flags (un par ligne)</label><textarea id="t-flags"></textarea></div>
+        </div>
+      </fieldset>
+      <fieldset><legend>Contact et envoi</legend>
+        <div class="fg">
+          <div class="f w2"><label for="t-contactName">Point de contact</label><input id="t-contactName" placeholder="Non identifié"></div>
+          <div class="f w2"><label for="t-contactEmail">Courriel</label><input id="t-contactEmail" placeholder="nom@entreprise.ca"></div>
+          <div class="f"><label for="t-sendDate">Date d'envoi</label><input type="date" id="t-sendDate"></div>
+          <div class="f"><label for="t-channel">Moyen</label><select id="t-channel"><option value="">—</option><option>Appel</option><option>Email</option><option>LinkedIn</option><option>Référé</option></select></div>
+          <div class="f"><label for="t-sendStatus">Statut</label><select id="t-sendStatus"><option value="">—</option><option>Envoyé</option><option>Relance nécessaire</option><option>Répondu</option></select></div>
+          <div class="f"><label for="t-followup">Prochaine relance</label><input type="date" id="t-followup"></div>
+        </div>
+      </fieldset>
+      <fieldset><legend>Traçabilité</legend>
+        <div class="fg">
+          <div class="f"><label for="t-slide">Référence fiche</label><input id="t-slide" placeholder="Fiche cible 3"></div>
+          <div class="f w2"><label for="t-badgeOrigine">Badge d'origine</label><input id="t-badgeOrigine"></div>
+          <div class="f"><label for="t-dateAdded">Ajoutée le</label><input type="date" id="t-dateAdded"></div>
+          <div class="f w4"><label for="t-notes">Notes</label><textarea id="t-notes"></textarea></div>
+          <div class="f w4"><label for="t-raw">Texte source (tel que collé)</label><textarea id="t-raw" class="raw"></textarea></div>
+        </div>
+        <p class="note" id="tSources"></p>
+      </fieldset>
+      <div class="mf">
+        <button type="button" class="btn danger" id="tDelete">Supprimer</button>
+        <div class="right">
+          <button type="button" class="btn" data-close>Annuler</button>
+          <button type="submit" class="btn go">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Thèse -->
+<div class="overlay" id="ovThese" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="thTitle" style="max-width:620px">
+    <form id="thForm">
+      <div class="mh">
+        <div><h2 id="thTitle">Thèse et seuils</h2><div class="derived">Les verdicts et les scores se recalculent dès que tu enregistres.</div></div>
+        <button type="button" class="x" data-close aria-label="Fermer">×</button>
+      </div>
+      <fieldset><legend>Cible noyau</legend>
+        <div class="fg">
+          <div class="f"><label for="th-caMin">CA min (M$)</label><input id="th-caMin" inputmode="decimal"></div>
+          <div class="f"><label for="th-caMax">CA max (M$)</label><input id="th-caMax" inputmode="decimal"></div>
+          <div class="f"><label for="th-ebMin">BAIIA min (M$)</label><input id="th-ebMin" inputmode="decimal"></div>
+          <div class="f"><label for="th-ebMax">BAIIA max (M$)</label><input id="th-ebMax" inputmode="decimal"></div>
+        </div>
+      </fieldset>
+      <fieldset><legend>Add-on et prix</legend>
+        <div class="fg">
+          <div class="f"><label for="th-addonCaMin">CA plancher add-on</label><input id="th-addonCaMin" inputmode="decimal"></div>
+          <div class="f"><label for="th-addonEbMin">BAIIA plancher add-on</label><input id="th-addonEbMin" inputmode="decimal"></div>
+          <div class="f"><label for="th-multMax">Multiple max (x BAIIA)</label><input id="th-multMax" inputmode="decimal"></div>
+        </div>
+        <p class="note">Sous le noyau mais au-dessus du plancher : verdict « Add-on ». Sous le plancher : « Rejet · taille ».</p>
+      </fieldset>
+      <fieldset><legend>Géographie</legend>
+        <div class="fg" id="thProv"></div>
+      </fieldset>
+      <div class="mf">
+        <button type="button" class="btn" id="thDefault">Revenir aux seuils par défaut</button>
+        <div class="right"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn go">Enregistrer</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Hypothèses par industrie -->
+<div class="overlay" id="ovBench" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bTitle" style="max-width:1060px">
+    <form id="bForm">
+      <div class="mh">
+        <div><h2 id="bTitle">Hypothèses par industrie</h2><div class="derived">Valeurs centrales utilisées tant qu'un chiffre vérifié ne les remplace pas. Tout est modifiable et se recalcule à l'enregistrement.</div></div>
+        <button type="button" class="x" data-close aria-label="Fermer">×</button>
+      </div>
+      <p class="bmeth" id="bMeth"></p>
+      <div class="f" style="max-width:340px;margin-bottom:10px"><label for="b-disp">Dispersion autour du revenu par employé (± %)</label><input id="b-disp" inputmode="decimal"></div>
+      <div class="bwrap"><table class="btab" id="bTab"></table></div>
+      <ul class="bcal" id="bCal"></ul>
+      <div class="bsrc" id="bSrc"></div>
+      <div class="mf">
+        <button type="button" class="btn" id="bDefault">Revenir aux valeurs sourcées</button>
+        <div class="right"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn go">Enregistrer</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Connexion (obligatoire : les données ne sont lisibles qu'après connexion d'un membre) -->
+<div class="overlay" id="ovLogin" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lgTitle" style="max-width:420px">
+    <form id="lgForm">
+      <div class="mh"><div><h2 id="lgTitle">Connexion</h2><div class="derived">Accès réservé à l'équipe. Demande un compte à Victor.</div></div></div>
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="f"><label for="lg-email">Courriel</label><input id="lg-email" type="email" autocomplete="username" required></div>
+        <div class="f"><label for="lg-pass">Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password" required></div>
+      </div>
+      <p class="note" id="lgMsg" role="status" style="min-height:18px"></p>
+      <div class="mf"><span></span><div class="right"><button type="submit" class="btn go" id="lgGo">Se connecter</button></div></div>
+    </form>
+  </div>
+</div>
+
+<!-- Copie manuelle -->
+<div class="overlay" id="ovCopy" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cpTitle">
+    <div class="mh"><div><h2 id="cpTitle">Données (JSON)</h2><div class="derived">La copie automatique a été refusée : sélectionne le texte et copie-le.</div></div><button type="button" class="x" data-close aria-label="Fermer">×</button></div>
+    <div class="f"><textarea id="cpText" class="raw" style="min-height:320px" aria-label="Données JSON"></textarea></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- listes fermées ---------- */
+const VERTICALES=["ÉNER","AGRO","SV","Défense","Services B2B","Hors thèse","À classer"];
+const CANAUX=[{n:"Index Repreneuriat",t:"A"},{n:"Courtier / F&A",t:"A"},{n:"Annonce en ligne",t:"A"},{n:"Processus avorté",t:"B"},{n:"Réseau / référé",t:"C"},{n:"REQ",t:"C"},{n:"ICRIQ",t:"C"},{n:"Recherche publique",t:"C"}];
+const CANAL_NAMES=CANAUX.map(c=>c.n);
+const CANAL_TIER=Object.fromEntries(CANAUX.map(c=>[c.n,c.t]));
+const PROVINCES=["QC","ON","Autre"];
+const CONF=["Élevée","Moyenne","Faible"];
+const RAISONS=["Retraite","Relève absente","Santé / décès","Diversification","Croissance / capital","Autre"];
+const TRANSACTIONS=["100 % actions","Majoritaire","Actifs","Minoritaire"];
+const MIX=["B2B","B2B dominant","Mixte","B2C dominant"];
+const RECUR=["Oui","Potentielle","Non"];
+const EXCLUSIONS=["Propriété institutionnelle","Stratégique / déjà acquise","Faillite / fermée","Hors taille (jugement)","Hors thèse (jugement)"];
+const FITS=["Fit fort","Fit modéré","Fit faible","À évaluer"];
+const PRIORITES=["A","B","C"];
+const ROLES=["Plateforme","Plateforme ou add-on","Add-on","Veille","Partenariat / carve-out"];
+const STAGES=[{id:"radar",n:"Radar"},{id:"backlog",n:"Backlog"},{id:"envoye",n:"Envoyé"},{id:"secondcall",n:"2e appel"},{id:"pursuit",n:"Démarche"},{id:"acquisition",n:"Acquisition"},{id:"pass",n:"Pass"}];
+const STAGE_N=Object.fromEntries(STAGES.map(s=>[s.id,s.n]));
+const SUIVI=[{id:"secondcall",n:"2e appel",target:20},{id:"pursuit",n:"Démarche",target:10},{id:"acquisition",n:"Acquisition",target:2},{id:"pass",n:"Pass / hors marché",target:null}];
+const VERDICTS=[{n:"Passe",g:"keep"},{n:"Add-on",g:"keep"},{n:"À valider",g:"check"},{n:"Rejet · taille",g:"out"},{n:"Rejet · prix",g:"out"},{n:"Rejet · secteur",g:"out"},{n:"Rejet · géo",g:"out"},{n:"Rejet · B2C",g:"out"},{n:"Rejet · propriété",g:"out"}];
+const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
+const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
+const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
+const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,addonCaMin:5,addonEbMin:0.5,multMax:7,provinces:["QC","ON"]};
+let CFG={...DEFAULT_CFG};
+const YEAR=new Date().getFullYear();
+
+/* ---------- hypothèses par industrie (sourcées, modifiables) ----------
+   qc / on : revenu par employé en k$ (2024) · m : marge BAIIA en % [bas, centre, haut] · x : multiple VE/BAIIA [bas, centre, haut]
+   R/E = revenus totaux (StatCan 16-10-0117-01, EAM) ÷ employés (StatCan 14-10-0202-01, EERH), même SCIAN, même province, 2024.
+   Marge = BAIIA des entreprises canadiennes (bénéfice d'exploitation + amortissement, StatCan 33-10-0500-01, moy. 2022-2024),
+   ajusté par l'écart de marge avant impôts de la sous-industrie dans l'EAM (2022-2024). */
+const DEFAULT_DISP=0.25;
+let BENCH_DISP=DEFAULT_DISP;
+const DEFAULT_BENCH=[
+  {id:"agro-viande",v:"AGRO",label:"Viandes transformées et charcuterie",naics:"311614 (3116)",qc:490,on:545,m:[4,7,10],x:[4.5,5.5,6.5],src:"R/E : SCIAN 3116 Québec 2024 = 588 k$, Ontario 658 k$, × 0,83 (ratio 311614 / 31161 en 2021). Marge : BAIIA des entreprises canadiennes d'aliments 7,5 % (2022-24); la viande est au niveau du groupe (EAM : 9,3 % c. 9,5 %)."},
+  {id:"agro-volaille",v:"AGRO",label:"Volaille (abattage et transformation)",naics:"311615",qc:600,on:535,m:[3,6,9],x:[4.5,5.5,6.5],src:"R/E : 3116 × 1,02 au Québec et × 0,81 en Ontario (ratios volaille / viande de 2021). Marge : EAM 2021 Canada, volaille 8,4 % c. viande 11,0 %, d'où un centre sous la viande."},
+  {id:"agro-mer",v:"AGRO",label:"Poissons et fruits de mer",naics:"3117",qc:430,on:580,m:[2,4,7],x:[4,5,6],src:"R/E : SCIAN 3117, Québec 2024 = 428 k$, Ontario 582 k$ (petit échantillon). Marge avant impôts EAM 2022-24 : Québec 3,8 %, Canada 3,0 %, la plus faible du secteur alimentaire."},
+  {id:"agro-boulangerie",v:"AGRO",label:"Boulangerie industrielle et surgelés de boulangerie",naics:"311814 (3118)",qc:275,on:445,m:[5,8,12],x:[5,6,7],src:"R/E : SCIAN 3118 Québec 2024 = 252 k$ × 1,09 (ratio 311814 / 31181 en 2021); Ontario 3118 = 445 k$. Marge : 7,5 % + écart EAM boulangerie c. aliments (+1 pt au Canada, 2022-24)."},
+  {id:"agro-sauces",v:"AGRO",label:"Sauces, assaisonnements, bases et condiments",naics:"311940 (3119)",qc:495,on:635,m:[6,9,13],x:[5,6,7.5],src:"R/E : SCIAN 3119 Québec 2024 = 515 k$ × 0,96 (ratio 31194 / 3119 en 2021); Ontario 577 k$ × 1,10 (ratio canadien). Marge : 7,5 % + écart EAM 31194 c. aliments (+1,3 pt Canada, +2,1 pts Québec)."},
+  {id:"agro-chocolat",v:"AGRO",label:"Confiserie, chocolat et garnitures",naics:"3113",qc:520,on:655,m:[4,8,14],x:[5,6,7],src:"R/E : SCIAN 3113, Québec 2024 = 520 k$, Ontario 653 k$. Marge avant impôts EAM 2022-24 : 4,8 % au Québec contre 12,8 % au Canada; centre prudent à 8 %."},
+  {id:"agro-autres",v:"AGRO",label:"Autres aliments (prêts-à-manger, collations, érable, thé)",naics:"31199 (3119)",qc:460,on:510,m:[5,8,12],x:[5,6,7],src:"R/E : SCIAN 3119 × 0,89 (ratio 31199 « tous les autres aliments » en 2021) : Québec 460 k$, Ontario 510 k$. Marge : groupe aliments 7,5 % (+0,4 pt pour 3119 au Canada)."},
+  {id:"agro-boissons",v:"AGRO",label:"Boissons et jus",naics:"3121",qc:440,on:310,m:[3,8,12],x:[5,6,7],src:"R/E : SCIAN 3121, Québec 2024 = 442 k$, Ontario 309 k$. Marge EAM : boissons gazeuses 2-3 %, ensemble des boissons ~10 %."},
+  {id:"sv-dispositifs",v:"SV",label:"Dispositifs médicaux et consommables",naics:"339110 (3391)",qc:315,on:295,m:[6,10,16],x:[6,7,8.5],src:"R/E : SCIAN 3391, Québec moyenne 2023-24 = 314 k$ (2024 : 295 k$), Ontario 295 k$. Marge : 9,9 % (BAIIA manufacturier canadien) + écart EAM (−0,6 pt Canada, +1,3 pt Québec)."},
+  {id:"sv-instruments",v:"SV",label:"Instruments médicaux électroniques, diagnostic et capteurs",naics:"334510 (3345)",qc:370,on:505,m:[5,10,15],x:[6,7,8.5],src:"R/E : SCIAN 3345 (instruments de mesure, médicaux et de contrôle), Québec 2024 = 371 k$, Ontario 506 k$. Marge : 9,9 % + écart EAM (+1,4 pt Canada, −0,9 pt Québec)."},
+  {id:"sv-sterilisation",v:"SV",label:"Stérilisation et fabrication sous contrat",naics:"3391 + services",qc:315,on:295,m:[8,12,18],x:[6.5,7.5,9],src:"Aucune série StatCan propre. R/E repris de 3391. Marge et multiple : hypothèse Basalt (service réglementé et récurrent), à remplacer dès la première donnée réelle."},
+  {id:"sv-pharma",v:"SV",label:"Pharmaceutique et injectables",naics:"3254",qc:450,on:580,m:[10,16,22],x:[6,7,8.5],src:"R/E : SCIAN 3254, Québec 2024 = 449 k$, Ontario 580 k$. Marge : BAIIA des entreprises canadiennes du groupe pharma et chimie 15,5 % (2022-24)."},
+  {id:"ener-cvac",v:"ÉNER",label:"Ventilation, CVAC, VRC / VRE",naics:"3334",qc:380,on:340,m:[6,9.5,14],x:[5,6,7],src:"R/E : SCIAN 3334, Québec 2024 = 382 k$, Ontario 339 k$. Marge : 9,9 % + écart EAM (−1,7 pt Canada, +0,9 pt Québec). Calibrage : Neptronic ~340 k$ par employé (SPX, 2026)."},
+  {id:"ener-controles",v:"ÉNER",label:"Contrôles, instrumentation et capteurs",naics:"334512 (3345)",qc:370,on:505,m:[6,10,15],x:[5.5,6.5,8],src:"R/E : SCIAN 3345, Québec 2024 = 371 k$, Ontario 506 k$. Marge : 9,9 % + écart EAM 3345 (+1,4 pt Canada, −0,9 pt Québec)."},
+  {id:"ener-eau",v:"ÉNER",label:"Traitement et filtration de l'eau, équipements de procédé",naics:"333999 (3339)",qc:315,on:350,m:[7,11,15],x:[5.5,6.5,8],src:"R/E : SCIAN 3339 (Québec 345 k$, Ontario 419 k$) × ratio 33399 de 2021 (0,91 et 0,84). Marge : 9,9 % + écart EAM 33399 (+0,4 pt Canada, +3,6 pts Québec)."},
+  {id:"ener-pompes",v:"ÉNER",label:"Pompes et systèmes hydroniques",naics:"333910",qc:440,on:480,m:[6,10,17],x:[5.5,6.5,8],src:"R/E : SCIAN 3339 × ratio 33391 de 2021 (1,27 au Québec, 1,14 au Canada). Marge avant impôts EAM 2022-24 : Québec 17,6 % (peu d'entreprises), Canada 6,7 %; centre 10 %."},
+  {id:"ener-electrique",v:"ÉNER",label:"Équipement électrique, batteries et éclairage",naics:"335 (3351, 3353, 3359)",qc:400,on:510,m:[0,8,13],x:[5,6,7],src:"R/E : SCIAN 3359 Québec 2024 = 417 k$ (3353 : 416 k$, éclairage 3351 : 312 k$), Ontario 509 k$. Marge : batteries (33591) en perte dans l'EAM 2021-23; le reste du groupe tourne autour de 8-10 %."},
+  {id:"ener-prefab",v:"ÉNER",label:"Bâtiments préfabriqués et structures métalliques",naics:"332311 (3323)",qc:370,on:460,m:[7,11,15],x:[4.5,5.5,6.5],src:"R/E : SCIAN 3323, Québec 2024 = 370 k$, Ontario 460 k$. Marge : 9,9 % + écart EAM 3323 (+0,9 pt Canada, +3 pts Québec)."},
+  {id:"ind-usinage",v:"Défense",label:"Usinage de précision (aéro, défense)",naics:"332710 (3327)",qc:245,on:275,m:[6,10,15],x:[4.5,5.5,6.5],src:"R/E : SCIAN 3327 (Québec 250 k$, Ontario 284 k$) × 0,97 (ratio 33271 de 2021). Marge : 9,9 % + écart EAM (−0,6 pt Canada); entreprises du groupe métal et machinerie 11,9 %. Multiple : GF Data, manufacturier en petites transactions 5,8x."},
+  {id:"ind-vetements",v:"Défense",label:"Vêtements de travail et ÉPI",naics:"3152",qc:160,on:195,m:[4,7,11],x:[4,5,6],src:"R/E : SCIAN 3152, Québec 2024 = 161 k$, Ontario 196 k$. Marge : entreprises canadiennes du groupe vêtements, textile, meubles et autres 7,0 % (2022-24)."},
+  {id:"mfg-general",v:"",label:"Manufacturier (moyenne, repli)",naics:"31-33",qc:550,on:595,m:[6,10,14],x:[5,6,7],src:"Repli quand aucune industrie n'est choisie. R/E : total manufacturier Québec 2024 = 551 k$ (tiré vers le haut par l'industrie lourde), Ontario 596 k$. Marge : 9,9 %."},
+];
+const VERT_BENCH={"AGRO":"agro-autres","SV":"sv-dispositifs","ÉNER":"ener-controles","Défense":"ind-usinage"};
+const BENCH_MULT_SRC="Multiples : GF Data 2025 (rachats de 10 à 500 M$ US, via CIBC, T1 2026) : moyenne 7,2x, manufacturier 6,6x, moyenne historique du manufacturier 6,2x. Petites transactions, premier semestre 2025 : 5,6x de 5 à 10 M$ US, 6,2 à 6,7x de 10 à 25 M$ US, manufacturier 5,8x. Courtiers PME au Québec : 3 à 7x, manufacturier 5,5 à 7x le BAIIA normalisé. L'écart entre sous-secteurs (±0,5 à 1x) est une hypothèse Basalt.";
+const BENCH_CALIB=[
+  "Neptronic (CVAC, Montréal) : ~75 M$ US de revenus (~103 M$ CA) pour plus de 300 employés, soit ~340 k$ par employé (communiqué SPX, juillet 2026). Hypothèse CVAC Québec : 380 k$, écart de −11 %.",
+  "Airia Brands (VRC, London, Ont.) : ~55 M$ CA pour ~150 employés en 2021, soit ~365 k$ (D&B, lui-même une estimation). Hypothèse CVAC Ontario : 340 k$.",
+  "Tempeff (récupération d'énergie, Winnipeg) : ~10 M$ CA pour ~50 employés en 2017, soit ~200 k$ (NIBE). Cohérent avec le niveau de 2021 de l'EAM pour la CVAC (265-271 k$), avant la hausse des prix de 2021-2024.",
+  "Marges agro : StatCan, BAIIA des entreprises canadiennes d'aliments et boissons 7,2 à 7,8 % (2022-2024).",
+  "Sortie vers un stratégique : SPX a payé 605 M$ CA pour Neptronic (juillet 2026). Un commentaire de marché, non vérifié, place le multiple un peu au-dessus de 12x le BAIIA.",
+];
+let BENCH=DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
+const PROV_KEYS=["employes","ca","baiia","fondation","ageFond","prix"];
+const PROV_LAB={employes:"Employés",ca:"CA (M$)",baiia:"BAIIA (M$)",fondation:"Fondation",ageFond:"Âge du fondateur",prix:"Prix demandé (M$)"};
+function validBench(b){
+  const n3=a=>Array.isArray(a)&&a.length===3&&a.every(x=>Number.isFinite(+x));
+  return b&&typeof b.id==="string"&&ID_RE.test(b.id)&&Number.isFinite(+b.qc)&&+b.qc>0&&Number.isFinite(+b.on)&&+b.on>0&&n3(b.m)&&n3(b.x);
+}
+function mergeBench(list){
+  if(!Array.isArray(list)||!list.length)return DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
+  const out=list.filter(validBench).map(b=>({id:b.id,v:str(b.v),label:str(b.label)||b.id,naics:str(b.naics),qc:+b.qc,on:+b.on,m:b.m.map(Number),x:b.x.map(Number),src:str(b.src)}));
+  DEFAULT_BENCH.forEach(d=>{if(!out.some(b=>b.id===d.id))out.push({...d,m:[...d.m],x:[...d.x]});});
+  return out;
+}
+
+/* ---------- utilitaires ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>Array.from(el.querySelectorAll(s));
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const str=v=>v==null?"":String(v).trim();
+const today=()=>new Date().toISOString().slice(0,10);
+const stripAcc=s=>String(s==null?"":s).normalize("NFD").replace(/[̀-ͯ]/g,"");
+const low=s=>stripAcc(s).toLowerCase();
+function uid(){return "t-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);}
+const ID_RE=/^[A-Za-z0-9_\-.~:@+]{1,120}$/;
+function validId(id){return typeof id==="string"&&ID_RE.test(id)&&id!=="."&&id!==".."?id:null;}
+function num(v){if(v==null||v==="")return null;const n=Number(String(v).replace(",",".").replace(/[^\d.\-]/g,""));return Number.isFinite(n)&&String(v).match(/\d/)?n:null;}
+function rng(v){
+  if(v==null||v==="")return null;
+  const s=String(v).replace(/,/g,".").replace(/[~≈$\s]/g,"").replace(/m\$?$/i,"").replace(/m(?=[-–à])/gi,"");
+  const lt=s.match(/^(?:<|≤|moinsde)(\d+(?:\.\d+)?)/i);if(lt){const h=+lt[1];return {lo:0,hi:h,mid:h/2};}
+  const gt=s.match(/^(?:>|≥|\+|plusde)(\d+(?:\.\d+)?)/i);if(gt){const l=+gt[1];return {lo:l,hi:l,mid:l};}
+  const m=s.match(/^(\d+(?:\.\d+)?)(?:(?:-|–|à|a)(\d+(?:\.\d+)?))?/i);
+  if(!m)return null;
+  const a=+m[1],b=m[2]!=null?+m[2]:a;
+  return {lo:Math.min(a,b),hi:Math.max(a,b),mid:(a+b)/2};
+}
+function pick(list,v){const s=str(v);if(!s)return "";return list.find(x=>low(x)===low(s))||"";}
+function normName(s){return low(s).replace(/\b(inc|ltee|ltd|limited|limitee|corp|corporation|enr|senc)\b\.?/g,"").replace(/[^a-z0-9]+/g,"");}
+const pct=(a,b)=>b?Math.round(a/b*100)+" %":"0 %";
+function groupBy(arr,f){const m=new Map();arr.forEach(x=>{const k=f(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x);});return m;}
+
+/* ---------- moteur de la thèse ---------- */
+/* Provenance : « verifie » ou « estime ». Une valeur saisie sans provenance compte comme estimée. */
+function pvOf(it,k){const p=it.prov&&it.prov[k];if(p==="verifie"||p==="estime")return p;return it[k]!=null&&it[k]!==""?"estime":"";}
+function benchOf(it){const id=it.bench||VERT_BENCH[it.verticale]||"mfg-general";return BENCH.find(b=>b.id===id)||BENCH.find(b=>b.id==="mfg-general")||BENCH[0]||null;}
+/* Valeurs centrales : un chiffre vérifié l'emporte; sinon employés × revenu par employé de l'industrie,
+   moyenné avec le CA du pipeline quand les deux existent. BAIIA = CA × marge centrale. VE = BAIIA × multiple central. */
+function sizeOf(it){
+  const b=benchOf(it),out={b,ca:null,eb:null,ve:null,emp:null};
+  const emp=rng(it.employes);
+  if(emp)out.emp={...emp,p:pvOf(it,"employes")==="verifie"?"v":"e"};
+  const caIn=rng(it.ca);
+  if(caIn&&pvOf(it,"ca")==="verifie")out.ca={...caIn,p:"v",how:"saisi"};
+  else{
+    const c=[];
+    if(emp&&b){const rpe=(it.province==="ON"?b.on:b.qc)/1000;c.push({lo:emp.lo*rpe*(1-BENCH_DISP),hi:emp.hi*rpe*(1+BENCH_DISP),mid:emp.mid*rpe,how:"emp"});}
+    if(caIn)c.push({...caIn,how:"pipe"});
+    if(c.length){
+      const mids=c.map(x=>x.mid);
+      out.ca={lo:Math.min(...c.map(x=>x.lo)),hi:Math.max(...c.map(x=>x.hi)),mid:mids.reduce((s,x)=>s+x,0)/c.length,p:"e",how:c.map(x=>x.how).join("+"),parts:c,gap:c.length>1?Math.max(...mids)/Math.max(0.01,Math.min(...mids)):1};
+    }
+  }
+  const ebIn=rng(it.baiia);
+  if(ebIn)out.eb={...ebIn,p:pvOf(it,"baiia")==="verifie"?"v":"e",how:"saisi"};
+  else if(out.ca&&b){const m=b.m[1]/100;out.eb={lo:out.ca.lo*m,hi:out.ca.hi*m,mid:out.ca.mid*m,p:"e",how:"marge"};}
+  if(out.eb&&b&&out.eb.mid>0)out.ve={lo:out.eb.mid*b.x[0],hi:out.eb.mid*b.x[2],mid:out.eb.mid*b.x[1],p:"e"};
+  return out;
+}
+const dec=n=>String(n).replace(".",",");
+function fmtM(x){if(x==null||!Number.isFinite(x))return "—";const a=Math.abs(x);return dec(a>=10?Math.round(x):Math.round(x*10)/10);}
+function sizeTitle(it,sz,k){
+  const b=sz.b,s=sz[k];if(!s)return "";
+  const rg=`${fmtM(s.mid)} M$ (${fmtM(s.lo)} à ${fmtM(s.hi)})`;
+  const src=key=>it.src&&it.src[key]?" · Source : "+it.src[key]:"";
+  if(k==="ca"){
+    if(s.p==="v")return `Vérifié : ${it.ca} M$${src("ca")}`;
+    const parts=(s.parts||[]).map(x=>x.how==="emp"?`${it.employes} employés × ${it.province==="ON"?b.on:b.qc} k$ par employé (${b.label}, ${it.province==="ON"?"Ontario":"Québec"} 2024, ±${Math.round(BENCH_DISP*100)} %) = ${fmtM(x.mid)} M$`:`CA du pipeline ${it.ca} M$${src("ca")}`);
+    return `Estimé ${rg}. ${parts.join(" · ")}${parts.length>1?" · moyenne des deux":""}${s.gap>2?". Écart de plus de 2x entre les sources : à vérifier en priorité":""}.`;
+  }
+  if(k==="eb"){
+    if(s.how==="saisi")return `${s.p==="v"?"Vérifié":"Estimé (saisi)"} : ${it.baiia} M$${src("baiia")}`;
+    return `Estimé ${rg}. CA central × marge BAIIA de ${dec(b.m[1])} % (${b.label} : ${dec(b.m[0])} à ${dec(b.m[2])} %).`;
+  }
+  if(k==="ve")return `Estimé ${rg}. BAIIA central de ${fmtM(sz.eb.mid)} M$ × multiple de ${dec(b.x[1])}x (${dec(b.x[0])} à ${dec(b.x[2])}x, ${b.label}).`;
+  return "";
+}
+function pvHTML(s,title){
+  if(!s)return "—";
+  return `<span class="pv ${s.p}${s.gap>2?" gap":""}"${title?` title="${esc(title)}"`:""}>${s.p==="v"?fmtM(s.mid)+" ✓":"≈ "+fmtM(s.mid)}</span>`;
+}
+function multOf(it,sz){const p=num(it.prix),eb=sz?sz.eb:rng(it.baiia);if(p==null||!eb||eb.mid<=0)return null;return p/eb.mid;}
+function ageOf(it){const f=num(it.fondation);return f&&f>1800&&f<=YEAR?YEAR-f:null;}
+function verdictOf(it,sz){
+  const c=CFG,ex=it.exclusion||"";
+  if(ex==="Faillite / fermée"||ex==="Stratégique / déjà acquise"||ex==="Propriété institutionnelle")return "Rejet · propriété";
+  if(ex==="Hors taille (jugement)")return "Rejet · taille";
+  if(ex==="Hors thèse (jugement)"||it.verticale==="Hors thèse")return "Rejet · secteur";
+  if(it.province&&!c.provinces.includes(it.province))return "Rejet · géo";
+  if(it.mix==="B2C dominant")return "Rejet · B2C";
+  if(it.transaction==="Minoritaire")return "Rejet · propriété";
+  const ca=sz?sz.ca:rng(it.ca),eb=sz?sz.eb:rng(it.baiia);
+  if(ca&&(ca.lo>c.caMax||ca.hi<c.addonCaMin))return "Rejet · taille";
+  if(eb&&(eb.lo>c.ebMax||eb.hi<c.addonEbMin))return "Rejet · taille";
+  const m=multOf(it,sz);
+  if(m!=null&&m>c.multMax)return "Rejet · prix";
+  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<c.ebMin))return "Add-on";
+  if(!ca&&!eb)return "À valider";
+  if(!it.province||!it.verticale||it.verticale==="À classer")return "À valider";
+  return "Passe";
+}
+const COMPLETE_KEYS=["verticale","ville","province","fondation","employes","ca","baiia","raison","transaction","mix","fit","owner","contact"];
+function completOf(it){
+  let n=0;
+  COMPLETE_KEYS.forEach(k=>{
+    if(k==="contact"){if(it.contactName||it.contactEmail)n++;return;}
+    const v=it[k];if(v!=null&&v!==""&&v!=="À classer"&&v!=="À évaluer")n++;
+  });
+  return n/COMPLETE_KEYS.length;
+}
+function joursOf(it){if(!it.dateAdded)return null;const d=(Date.now()-new Date(it.dateAdded+"T00:00:00").getTime())/864e5;return Number.isFinite(d)?Math.max(0,Math.floor(d)):null;}
+function scoreOf(it,v,sz){
+  const age=ageOf(it);
+  const caR=sz?sz.ca:rng(it.ca),ebR=sz?sz.eb:rng(it.baiia);
+  let succ=age==null?10:age>=40?35:age>=30?28:age>=20?15:3;
+  const af=num(it.ageFond);
+  if(af!=null&&af>0)succ=af>=65?35:af>=58?28:af>=50?15:3;
+  if(["Retraite","Relève absente","Santé / décès"].includes(it.raison))succ=35;
+  let taille;
+  if(v==="Passe"){
+    const ca=caR,eb=ebR;
+    const lowHalf=(eb?eb.mid<=(CFG.ebMin+CFG.ebMax)/2:true)&&(ca?ca.mid<=(CFG.caMin+CFG.caMax)/2:true);
+    taille=lowHalf?25:20;
+  }else if(v==="Add-on")taille=12;
+  else if(v==="À valider")taille=8;
+  else if(v==="Rejet · taille"||v==="Rejet · prix")taille=0;
+  else taille=(caR||ebR)?15:8;
+  const fit={"Fit fort":20,"Fit modéré":12,"Fit faible":4}[it.fit];
+  const fitP=fit==null?8:fit;
+  const bridgeOk=!!it.bridge&&!/^(aucun|pas de|sans objet|non)/i.test(String(it.bridge).trim());
+  const rec={Oui:5,Potentielle:4,Non:0}[it.recurrence];
+  const lev=(bridgeOk?5:0)+(rec==null?2:rec);
+  const data=Math.round(completOf(it)*10);
+  return {total:Math.min(100,succ+taille+fitP+lev+data),parts:{succ,taille,fit:fitP,lev,data}};
+}
+let DER=new Map();
+function D(it){
+  let d=DER.get(it.id);
+  if(d)return d;
+  const sz=sizeOf(it);
+  const v=verdictOf(it,sz),s=scoreOf(it,v,sz);
+  d={verdict:v,group:VERDICT_G[v],score:s.total,parts:s.parts,age:ageOf(it),tier:CANAL_TIER[it.canal]||"",mult:multOf(it,sz),sz,complet:completOf(it),jours:joursOf(it)};
+  DER.set(it.id,d);
+  return d;
+}
+
+/* ---------- normalisation (import, migration, Claude) ---------- */
+function parseBadge(b){
+  const n=low(b),o={};
+  if(!n)return o;
+  if(/^ener|^energie/.test(n))o.verticale="ÉNER";else if(/^agro/.test(n))o.verticale="AGRO";else if(/^sv\b|^sante/.test(n))o.verticale="SV";else if(/^def/.test(n))o.verticale="Défense";
+  if(/fit fort/.test(n))o.fit="Fit fort";else if(/fit modere/.test(n))o.fit="Fit modéré";else if(/fit faible/.test(n))o.fit="Fit faible";
+  if(/\bp0\b|hors marche|hors these|hors taille/.test(n)){
+    if(/faillite/.test(n))o.exclusion="Faillite / fermée";
+    else if(/acquise|detenue|filiale|strategique|hors marche/.test(n))o.exclusion="Stratégique / déjà acquise";
+    else if(/capital|fonds|cotee|cooperative|institutionnel|groupe/.test(n))o.exclusion="Propriété institutionnelle";
+    else if(/hors taille|sous le plancher/.test(n))o.exclusion="Hors taille (jugement)";
+    else if(/hors these|non manufacturier|b2c|grand public/.test(n))o.exclusion="Hors thèse (jugement)";
+  }
+  return o;
+}
+function guessVert(text){
+  const s=low(text);
+  if(/defense|aero|militaire/.test(s))return "Défense";
+  if(/\beau\b|eaux|energ|cvac|ventil|chauff|eclairage|batter|hydro|eolien|vrc|vre|batiment|filtration|pompe|transformateur/.test(s))return "ÉNER";
+  if(/medic|sante|pharma|biotech|clinique|steril|orthe|prothe|diagnos|infection|chirurg|therap|injectable/.test(s))return "SV";
+  if(/aliment|viande|boisson|agro|volaille|fromage|chocolat|condiment|sauce|dessert|erable|poisson|collation|pates?\b|culinaire|marinade|the\b/.test(s))return "AGRO";
+  return "";
+}
+function parseGeo(geo){
+  const s=str(geo);if(!s)return {ville:"",province:""};
+  const i=s.lastIndexOf(",");
+  const city=i>=0?s.slice(0,i).trim():s;
+  const prov=i>=0?s.slice(i+1).trim():s;
+  const pn=low(prov);
+  const p=/quebec|\bqc\b/.test(pn)?"QC":/ontario|\bon\b/.test(pn)?"ON":(i>=0?"Autre":"");
+  return {ville:i>=0?city:(p?"":city),province:p};
+}
+function canalFromSource(src){
+  const s=low(src);if(!s)return "";
+  if(/index|repreneuriat|cteq/.test(s))return "Index Repreneuriat";
+  if(/courtier|f&a|m&a|fusion/.test(s))return "Courtier / F&A";
+  if(/icriq/.test(s))return "ICRIQ";
+  if(/\breq\b|registraire/.test(s))return "REQ";
+  if(/avort/.test(s))return "Processus avorté";
+  if(/reseau|refere|reference/.test(s))return "Réseau / référé";
+  return "Recherche publique";
+}
+function mapRole(v){const s=low(v);if(!s)return "";if(/^plateforme/.test(s))return /add/.test(s)?"Plateforme ou add-on":"Plateforme";if(/^add/.test(s))return "Add-on";if(/^veille/.test(s))return "Veille";if(/carve|partenariat/.test(s))return "Partenariat / carve-out";return "";}
+function normalize(t,defStage){
+  t=t||{};
+  const b=parseBadge(t.badge);
+  let ville,province;
+  if(t.ville!=null||t.province!=null){
+    ville=str(t.ville);
+    const pv=str(t.province);
+    province=pick(PROVINCES,pv)||(/^qu|^qc/i.test(pv)?"QC":/^ont|^on$/i.test(pv)?"ON":pv?"Autre":"");
+  }else{const g=parseGeo(t.geo);ville=g.ville;province=g.province;}
+  const canal=pick(CANAL_NAMES,t.canal)||canalFromSource(t.source);
+  const flags=Array.isArray(t.flags)?t.flags.map(str).filter(Boolean):(typeof t.flags==="string"?t.flags.split("\n").map(str).filter(Boolean):[]);
+  const stage=STAGES.some(s=>s.id===t.stage)?t.stage:(t.stage==="scouting"?"backlog":defStage);
+  return {
+    id:validId(t.id)||uid(),stage,
+    name:str(t.name),suffix:str(t.suffix),ref:str(t.ref),neq:str(t.neq),site:str(t.site),
+    verticale:pick(VERTICALES,t.verticale)||b.verticale||guessVert((t.industry||"")+" "+(t.soussecteur||""))||"À classer",
+    soussecteur:str(t.soussecteur||t.industry),ville,province,region:str(t.region),
+    fondation:num(t.fondation),employes:str(t.employes),ca:str(t.ca),baiia:str(t.baiia),confTaille:pick(CONF,t.confTaille),prix:num(t.prix),
+    raison:pick(RAISONS,t.raison),transaction:pick(TRANSACTIONS,t.transaction),mix:pick(MIX,t.mix),recurrence:pick(RECUR,t.recurrence),
+    exclusion:pick(EXCLUSIONS,t.exclusion)||b.exclusion||"",
+    fit:pick(FITS,t.fit)||b.fit||"À évaluer",
+    priorite:pick(PRIORITES,t.priorite),role:pick(ROLES,t.role)||mapRole(t.role),ageFond:num(t.ageFond),
+    canal,sources:Array.isArray(t.sources)?t.sources.map(str).filter(Boolean):(canal?[canal]:[]),
+    contactName:str(t.contactName),contactEmail:str(t.contactEmail),
+    bridge:str(t.bridge),owner:str(t.owner),flags,slide:str(t.slide),notes:str(t.notes),raw:str(t.raw||t.extrait),
+    badgeOrigine:str(t.badgeOrigine||(t.badge&&!pick(FITS,t.badge)?t.badge:"")),source:str(t.source),
+    sendDate:str(t.sendDate),channel:str(t.channel),sendStatus:str(t.sendStatus),followup:str(t.followup),
+    bench:typeof t.bench==="string"&&ID_RE.test(t.bench)?t.bench:"",
+    prov:cleanProv(t.prov),src:cleanSrc(t.src),
+    dateAdded:/^\d{4}-\d\d-\d\d$/.test(t.dateAdded||"")?t.dateAdded:today(),
+  };
+}
+function cleanProv(p){const o={};if(p&&typeof p==="object")PROV_KEYS.forEach(k=>{if(p[k]==="verifie"||p[k]==="estime")o[k]=p[k];});return o;}
+function cleanSrc(s){const o={};if(s&&typeof s==="object")PROV_KEYS.forEach(k=>{const v=str(s[k]);if(v)o[k]=v.slice(0,300);});return o;}
+function clean(it){return JSON.parse(JSON.stringify(it,(k,v)=>v===undefined?null:v));}
+const MERGE_KEYS=["bench","priorite","role","ageFond","suffix","ref","neq","site","verticale","soussecteur","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","raison","transaction","mix","recurrence","exclusion","fit","canal","contactName","contactEmail","bridge","owner","slide","notes"];
+function mergeInto(ex,nw){
+  const out={...ex};
+  MERGE_KEYS.forEach(k=>{const a=out[k],b=nw[k];if((a==null||a===""||a==="À classer"||a==="À évaluer")&&b!=null&&b!==""&&b!=="À classer"&&b!=="À évaluer")out[k]=b;});
+  out.sources=[...new Set([...(ex.sources||[]),...(nw.sources||[])])];
+  out.flags=[...new Set([...(ex.flags||[]),...(nw.flags||[])])];
+  out.prov={...(nw.prov||{}),...(ex.prov||{})};
+  out.src={...(nw.src||{}),...(ex.src||{})};
+  if(nw.raw&&!String(ex.raw||"").includes(nw.raw.slice(0,80)))out.raw=[ex.raw,nw.raw].filter(Boolean).join("\n\n----------\n\n");
+  return out;
+}
+function findDup(it,skipId){
+  const nn=normName(it.name);
+  for(const x of items.values()){
+    if(x.id===skipId||x.id===it.id)continue;
+    if(it.neq&&x.neq&&x.neq===it.neq)return x;
+    if(it.ref&&x.ref&&x.ref===it.ref)return x;
+    if(nn.length>2&&normName(x.name)===nn)return x;
+  }
+  return null;
+}
+
+/* ---------- base de données ---------- */
+let db=null,items=new Map(),dbReady=false,pendingRender=false,pendingFocus=null;
+const chains=new Map();
+function setDbState(state,text){
+  const el=$("#dbState");el.className="dbstate "+state;$("span",el).textContent=text;
+}
+function toast(text,kind){
+  const t=document.createElement("div");t.className="toast"+(kind==="err"?" err":"");t.textContent=text;t.setAttribute("role","status");
+  document.body.appendChild(t);setTimeout(()=>t.remove(),kind==="err"?6000:3200);
+}
+function writeErr(e){
+  const c=e&&e.code;
+  if(c==="quota_exceeded")toast("La base est pleine : supprime des cibles écartées pour continuer.","err");
+  else if(c==="invalid_argument")toast("Écriture refusée : tu n'as peut-être pas les droits de modification sur ce tracker.","err");
+  else if(c==="resource_exhausted")toast("Trop d'écritures d'un coup. Attends quelques secondes et réessaie.","err");
+  else toast("La base ne répond pas : la dernière modification n'est pas enregistrée.","err");
+}
+function writeItem(it){
+  if(!db){toast("Base indisponible : modification non enregistrée.","err");return Promise.resolve(false);}
+  const body=clean({...it,updatedAt:new Date().toISOString()});
+  items.set(it.id,body);DER.delete(it.id);
+  const ref=db.collection("cibles").doc(it.id);
+  const p=(chains.get(it.id)||Promise.resolve()).then(()=>ref.set(body).then(()=>true,async e=>{
+    if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,600+Math.random()*600));return ref.set(body).then(()=>true,e2=>{writeErr(e2);return false;});}
+    writeErr(e);return false;
+  }));
+  chains.set(it.id,p);
+  return p;
+}
+function deleteItem(id){
+  if(!db)return Promise.resolve(false);
+  items.delete(id);
+  const ref=db.collection("cibles").doc(id);
+  const p=(chains.get(id)||Promise.resolve()).then(()=>ref.delete().then(()=>true,e=>{writeErr(e);return false;}));
+  chains.set(id,p);return p;
+}
+async function writeMany(list,label){
+  let ok=0;
+  for(let i=0;i<list.length;i++){
+    if(await writeItem(list[i]))ok++;
+    if(label&&list.length>8&&i%5===4)setDbState("ok",label+" "+(i+1)+" / "+list.length+"…");
+  }
+  if(label)setDbState("ok","Synchronisé");
+  return ok;
+}
+/* ---------- base de données : Supabase ----------
+   Une seule table « docs » (collection, id, data jsonb) qui reproduit les collections du tracker :
+   cibles/<id>, univers/<lot>, config/tri, config/these, config/benchmarks. Schéma et règles d'accès : supabase.sql.
+   La clé publishable est publique par conception : ce sont les règles RLS (membres connectés seulement) qui protègent les données. */
+const SB_URL="https://VOTRE-PROJET.supabase.co";   // Supabase → Project Settings → Data API → Project URL
+const SB_KEY="VOTRE-CLE-PUBLISHABLE";               // Supabase → Project Settings → API Keys → publishable key (sb_publishable_…)
+let sb=null;
+async function getCap(name){return null;} // les capacités claude.ai (dont l'extraction par Claude) n'existent pas hors de claude.ai
+function sbErr(e){
+  const m=String(e&&e.message||e||"");
+  const o=new Error(m);
+  o.code=(e&&(e.code==="42501"||e.status===401||e.status===403))||/row-level security|permission denied|jwt|not authorized/i.test(m)?"invalid_argument":/quota|too large|payload/i.test(m)?"quota_exceeded":"unavailable";
+  return o;
+}
+function makeDb(){
+  const cache=new Map(),loading=new Map(),listeners=new Set();
+  const collSnap=c=>({docs:[...(cache.get(c)||new Map()).entries()].map(([id,data])=>({id,data:()=>data})),metadata:{fromCache:false}});
+  const docSnap=(c,id)=>{const m=cache.get(c),d=m&&m.get(id);return {id,exists:d!==undefined,data:()=>d};};
+  const emit=c=>listeners.forEach(l=>{if(l.c!==c)return;try{l.cb(l.id==null?collSnap(c):docSnap(c,l.id));}catch(err){console.error(err);}});
+  function load(c){
+    if(!loading.has(c))loading.set(c,(async()=>{
+      const m=new Map(),step=1000;let from=0;
+      for(;;){
+        const {data,error}=await sb.from("docs").select("id,data").eq("collection",c).range(from,from+step-1);
+        if(error){loading.delete(c);throw sbErr(error);}
+        data.forEach(r=>m.set(r.id,r.data));
+        if(data.length<step)break;from+=step;
+      }
+      cache.set(c,m);
+    })());
+    return loading.get(c);
+  }
+  // Synchronisation en direct : les modifications des autres membres arrivent sans recharger.
+  sb.channel("docs-live").on("postgres_changes",{event:"*",schema:"public",table:"docs"},p=>{
+    const row=p.eventType==="DELETE"?p.old:p.new;if(!row||!row.collection)return;
+    const m=cache.get(row.collection);if(!m)return;
+    if(p.eventType==="DELETE")m.delete(row.id);else if(row.data!=null)m.set(row.id,row.data);
+    emit(row.collection);
+  }).subscribe();
+  const listen=(c,id,cb,err)=>{
+    const l={c,id,cb};listeners.add(l);
+    load(c).then(()=>{if(listeners.has(l))cb(id==null?collSnap(c):docSnap(c,id));},e=>{if(err)err(e);});
+    return ()=>listeners.delete(l);
+  };
+  const docRef=(c,id)=>({
+    async set(v){
+      const data=JSON.parse(JSON.stringify(v));
+      const {error}=await sb.from("docs").upsert({collection:c,id,data,updated_at:new Date().toISOString()});
+      if(error)throw sbErr(error);
+      const m=cache.get(c);if(m){m.set(id,data);emit(c);}
+    },
+    async delete(){
+      const {error}=await sb.from("docs").delete().eq("collection",c).eq("id",id);
+      if(error)throw sbErr(error);
+      const m=cache.get(c);if(m){m.delete(id);emit(c);}
+    },
+    onSnapshot:(cb,err)=>listen(c,id,cb,err),
+  });
+  return {
+    collection:c=>({doc:id=>docRef(c,id),onSnapshot:(cb,err)=>listen(c,null,cb,err)}),
+    doc:p=>{const i=p.lastIndexOf("/");return docRef(p.slice(0,i),p.slice(i+1));},
+  };
+}
+async function initDb(){
+  if(!window.supabase||/VOTRE-/.test(SB_URL+SB_KEY)){
+    setDbState("err","Base non configurée");
+    showBanner("err","<b>La base n'est pas configurée.</b> Remplis SB_URL et SB_KEY dans index.html (bloc « base de données : Supabase »).");
+    renderAll();return;
+  }
+  sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  let session=null;
+  try{({data:{session}}=await sb.auth.getSession());}catch(e){}
+  if(session)startDb(session);else showLogin();
+}
+function showLogin(){
+  setDbState("err","Connexion requise");$("#btnLogout").hidden=true;
+  $("#ovLogin").hidden=false;setTimeout(()=>$("#lg-email").focus(),0);
+}
+$("#lgForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!sb)return;
+  const btn=$("#lgGo");btn.disabled=true;$("#lgMsg").textContent="Connexion…";
+  const {data,error}=await sb.auth.signInWithPassword({email:str($("#lg-email").value),password:$("#lg-pass").value});
+  btn.disabled=false;
+  if(error){$("#lgMsg").textContent=/invalid/i.test(error.message)?"Courriel ou mot de passe invalide.":"Connexion impossible : "+error.message;return;}
+  $("#lg-pass").value="";$("#lgMsg").textContent="";$("#ovLogin").hidden=true;
+  startDb(data.session);
+});
+$("#btnLogout").addEventListener("click",async()=>{try{await sb.auth.signOut();}catch(e){}location.reload();});
+async function startDb(session){
+  const email=(session&&session.user&&session.user.email)||"";
+  $("#btnLogout").hidden=false;$("#btnLogout").title="Connecté : "+email;
+  let membre=false;
+  try{const {data,error}=await sb.rpc("est_membre");membre=!error&&data===true;}catch(e){}
+  if(!membre){
+    setDbState("err","Accès refusé");
+    showBanner("err","<b>Ce compte ("+esc(email)+") n'a pas accès aux données.</b> Ajoute ce courriel à la table « membres » dans Supabase, puis recharge la page.");
+    renderAll();return;
+  }
+  db=makeDb();
+  const timer=setTimeout(()=>{if(!dbReady)setDbState("err","La base ne répond pas encore. Les données affichées peuvent être en retard.");},10000);
+  db.collection("cibles").onSnapshot(snap=>{
+    const m=new Map();
+    snap.docs.forEach(d=>{const x=d.data();if(x)m.set(d.id,{...x,id:d.id});});
+    items=m;DER=new Map();
+    if(!snap.metadata.fromCache&&!dbReady){dbReady=true;clearTimeout(timer);setDbState("ok","Synchronisé");checkMigration();}
+    renderSoon();
+  },e=>{clearTimeout(timer);setDbState("err","Lecture impossible ("+(e&&e.code||"erreur")+")");});
+  db.collection("univers").onSnapshot(snap=>{
+    const m=new Map();snap.docs.forEach(d=>{const x=d.data();if(x)m.set(d.id,x);});
+    UNIV=m;UROWS=[];
+    [...m.entries()].sort((a,b)=>String(a[1].date||"").localeCompare(String(b[1].date||""))||a[0].localeCompare(b[0])).forEach(([id,doc])=>(doc.rows||[]).forEach((r,i)=>UROWS.push({...r,_id:id+":"+i,_lot:doc.label||doc.batch||id})));
+    renderSoon();
+  },()=>{});
+  db.doc("config/tri").onSnapshot(s=>{
+    const st=s.exists&&s.data().steps;
+    TRI={steps:Array.isArray(st)&&st.length?st.map(x=>({...x})):DEFAULT_STEPS.map(x=>({...x}))};
+    renderSoon();
+  },()=>{});
+  db.doc("config/these").onSnapshot(s=>{
+    CFG=s.exists?{...DEFAULT_CFG,...s.data()}:{...DEFAULT_CFG};
+    DER=new Map();renderSoon();
+  },()=>{});
+  db.doc("config/benchmarks").onSnapshot(s=>{
+    const v=s.exists?s.data():null;
+    BENCH=mergeBench(v&&v.items);
+    BENCH_DISP=v&&typeof v.disp==="number"&&v.disp>=0&&v.disp<1?v.disp:DEFAULT_DISP;
+    DER=new Map();renderSoon();
+  },()=>{});
+}
+
+/* ---------- migration depuis l'ancienne version (localStorage) ---------- */
+function legacyItems(){
+  try{
+    const raw=localStorage.getItem("basalt-sourcing-tracker-v2")||localStorage.getItem("basalt-sourcing-tracker-v1");
+    const v=raw?JSON.parse(raw):[];return Array.isArray(v)?v:[];
+  }catch(e){return [];}
+}
+function migrated(){try{return localStorage.getItem("basalt-migrated-v3")==="1";}catch(e){return false;}}
+function checkMigration(){
+  const L=legacyItems();
+  if(L.length&&!migrated()){
+    showBanner("",`<span><b>${L.length} cibles</b> de l'ancienne version sont enregistrées dans ce navigateur seulement. Importe-les dans la base pour les retrouver partout et les voir dans le classeur.</span><span style="display:flex;gap:8px"><button class="btn amber sm" id="bnMigrate">Importer dans la base</button><button class="btn sm" id="bnLater" style="background:var(--rock-2);color:var(--rock-ink);border-color:var(--rock-rule)">Plus tard</button></span>`);
+    $("#bnMigrate").onclick=async()=>{
+      $("#bnMigrate").disabled=true;
+      const n=await importList(L,"backlog","Migration");
+      try{localStorage.setItem("basalt-migrated-v3","1");}catch(e){}
+      showBanner(null);toast(n+" cibles importées dans la base.");
+    };
+    $("#bnLater").onclick=()=>showBanner(null);
+  }else if(dbReady&&!items.size){
+    showBanner("","<span><b>La base est vide.</b> Colle un ticket JSON dans le Radar ou importe un fichier JSON avec le bouton en haut.</span>");
+  }
+}
+function showBanner(kind,html){
+  const b=$("#banner");
+  if(kind==null){b.innerHTML="";return;}
+  b.innerHTML=`<div class="banner ${kind}">${html}</div>`;
+}
+async function importList(list,defStage,label){
+  const toWrite=[];const seen=new Map();
+  list.forEach(raw=>{
+    const it=normalize(raw,defStage);
+    if(!it.name)return;
+    const same=items.get(it.id)||seen.get(it.id);
+    if(same){toWrite.push(mergeInto(same,it));return;}
+    const dup=findDup(it);
+    if(dup){const m=mergeInto(seen.get(dup.id)||dup,it);seen.set(dup.id,m);toWrite.push(m);return;}
+    seen.set(it.id,it);toWrite.push(it);
+  });
+  const last=new Map();toWrite.forEach(x=>last.set(x.id,x));
+  return writeMany([...last.values()],label||"Import");
+}
+
+/* ---------- état de l'interface ---------- */
+const F={q:"",vert:new Set(),grp:new Set(),canal:"",prov:"",days:0,score:0};
+const SHEETS={
+  radar:{sort:"_score",dir:-1,preset:"essentiel",sel:new Set()},
+  backlog:{sort:"_score",dir:-1,preset:"essentiel",sel:new Set()},
+};
+let TAB="backlog",FOCUS=null;
+function saveUi(){
+  try{localStorage.setItem("basalt-ui-v3",JSON.stringify({tab:TAB,F:{...F,vert:[...F.vert],grp:[...F.grp]},sheets:Object.fromEntries(Object.entries(SHEETS).map(([k,s])=>[k,{sort:s.sort,dir:s.dir,preset:s.preset}]))}));}catch(e){}
+}
+function loadUi(){
+  try{
+    const u=JSON.parse(localStorage.getItem("basalt-ui-v3")||"null");if(!u)return;
+    if(u.tab)TAB=u.tab;
+    if(u.F){Object.assign(F,u.F);F.vert=new Set(u.F.vert||[]);F.grp=new Set(u.F.grp||[]);}
+    if(u.sheets)Object.entries(u.sheets).forEach(([k,s])=>{if(SHEETS[k])Object.assign(SHEETS[k],s);});
+  }catch(e){}
+}
+function passF(it){
+  const d=D(it);
+  if(F.q){const s=low([it.name,it.soussecteur,it.ville,it.region,it.contactName,it.notes,it.ref,it.neq].join(" "));if(!s.includes(low(F.q)))return false;}
+  if(F.vert.size&&!F.vert.has(it.verticale))return false;
+  if(F.grp.size&&!F.grp.has(d.group))return false;
+  if(F.canal){if(F.canal.startsWith("tier:")){if(d.tier!==F.canal.slice(5))return false;}else if((it.canal||"")!==F.canal)return false;}
+  if(F.prov&&it.province!==F.prov)return false;
+  if(F.score&&d.score<F.score)return false;
+  if(F.days&&(d.jours==null||d.jours>F.days))return false;
+  return true;
+}
+const all=()=>[...items.values()];
+const inStage=(...st)=>all().filter(it=>st.includes(it.stage));
+
+/* ---------- classeur ---------- */
+const COLS={
+  _sel:{label:"",grp:"Cible",w:38,kind:"sel"},
+  name:{label:"Entreprise",grp:"Cible",w:240,kind:"name"},
+  verticale:{label:"Verticale",grp:"Cible",w:112,kind:"select",opts:VERTICALES,noBlank:true},
+  priorite:{label:"Prio.",grp:"Cible",w:62,kind:"select",opts:PRIORITES},
+  soussecteur:{label:"Sous-secteur",grp:"Cible",w:230,kind:"text"},
+  ville:{label:"Ville",grp:"Cible",w:138,kind:"text"},
+  province:{label:"Prov.",grp:"Cible",w:72,kind:"select",opts:PROVINCES},
+  _score:{label:"Score",grp:"Calculé",w:108,kind:"calc"},
+  _verdict:{label:"Verdict",grp:"Calculé",w:150,kind:"calc"},
+  _tier:{label:"Tier",grp:"Calculé",w:56,kind:"calc"},
+  _age:{label:"Âge",grp:"Calculé",w:72,kind:"calc"},
+  _stage:{label:"Étape",grp:"Calculé",w:96,kind:"calc"},
+  _ca:{label:"CA (M$)",grp:"Calculé",w:96,kind:"calc"},
+  _eb:{label:"BAIIA (M$)",grp:"Calculé",w:104,kind:"calc"},
+  _ve:{label:"VE est. (M$)",grp:"Calculé",w:110,kind:"calc"},
+  fondation:{label:"Fondée",grp:"Relève",w:92,kind:"prov",num:true},
+  ageFond:{label:"Âge fond.",grp:"Relève",w:92,kind:"prov",num:true},
+  raison:{label:"Raison de vente",grp:"Relève",w:148,kind:"select",opts:RAISONS},
+  bench:{label:"Industrie de référence",grp:"Taille",w:230,kind:"bench"},
+  employes:{label:"Employés",grp:"Taille",w:104,kind:"prov"},
+  ca:{label:"CA saisi (M$)",grp:"Taille",w:110,kind:"prov"},
+  baiia:{label:"BAIIA saisi (M$)",grp:"Taille",w:118,kind:"prov"},
+  confTaille:{label:"Confiance",grp:"Taille",w:98,kind:"select",opts:CONF},
+  prix:{label:"Prix (M$)",grp:"Transaction",w:98,kind:"prov",num:true},
+  _mult:{label:"Multiple",grp:"Transaction",w:84,kind:"calc"},
+  transaction:{label:"Transaction",grp:"Transaction",w:126,kind:"select",opts:TRANSACTIONS},
+  mix:{label:"Mix clients",grp:"Transaction",w:118,kind:"select",opts:MIX},
+  role:{label:"Rôle",grp:"Qualification",w:170,kind:"select",opts:ROLES},
+  exclusion:{label:"Exclusion",grp:"Qualification",w:190,kind:"select",opts:EXCLUSIONS},
+  fit:{label:"Fit",grp:"Qualification",w:106,kind:"select",opts:FITS,noBlank:true},
+  recurrence:{label:"Récurrence",grp:"Qualification",w:104,kind:"select",opts:RECUR},
+  canal:{label:"Canal",grp:"Qualification",w:160,kind:"select",opts:CANAL_NAMES},
+  contactName:{label:"Contact",grp:"Qualification",w:150,kind:"text",ph:"Non identifié"},
+  contactEmail:{label:"Courriel",grp:"Qualification",w:196,kind:"text"},
+  site:{label:"Site web",grp:"Qualification",w:180,kind:"text"},
+  _flags:{label:"Flags",grp:"Suivi",w:64,kind:"calc"},
+  _complet:{label:"Données",grp:"Suivi",w:98,kind:"calc"},
+  _jours:{label:"Jours",grp:"Suivi",w:64,kind:"calc"},
+  _act:{label:"",grp:"Suivi",w:122,kind:"act"},
+};
+const PRESETS={
+  essentiel:["_sel","name","verticale","priorite","ville","province","_score","_verdict","_ca","_eb","_ve","_tier","fondation","ageFond","employes","role","fit","canal","contactName","_jours","_act"],
+  financier:["_sel","name","verticale","priorite","_score","_verdict","_ca","_eb","_ve","_age","fondation","ageFond","raison","bench","employes","ca","baiia","confTaille","prix","_mult","transaction","mix","_act"],
+  tout:["_sel","name","verticale","priorite","soussecteur","ville","province","_score","_verdict","_ca","_eb","_ve","_tier","_age","fondation","ageFond","raison","bench","employes","ca","baiia","confTaille","prix","_mult","transaction","mix","role","exclusion","fit","recurrence","canal","contactName","contactEmail","site","_flags","_complet","_jours","_act"],
+};
+const PRESET_N={essentiel:"Essentiel",financier:"Financier",tout:"Toutes les colonnes"};
+function sortVal(it,k){
+  const d=D(it);
+  switch(k){
+    case "_score":return d.score;
+    case "_verdict":return VERDICTS.findIndex(v=>v.n===d.verdict);
+    case "_tier":return d.tier||"Z";
+    case "_age":return d.age==null?-1:d.age;
+    case "_mult":return d.mult==null?999:d.mult;
+    case "_flags":return (it.flags||[]).length;
+    case "_complet":return d.complet;
+    case "_jours":return d.jours==null?99999:d.jours;
+    case "_stage":return STAGES.findIndex(s=>s.id===it.stage);
+    case "_ca":return d.sz.ca?d.sz.ca.mid:-1;
+    case "_eb":return d.sz.eb?d.sz.eb.mid:-1;
+    case "_ve":return d.sz.ve?d.sz.ve.mid:-1;
+    case "bench":return d.sz.b?low(d.sz.b.label):"";
+    case "ca":case "baiia":case "employes":{const r=rng(it[k]);return r?r.mid:-1;}
+    case "fondation":case "prix":case "ageFond":{const n=num(it[k]);return n==null?-1:n;}
+    default:return low(it[k]||"");
+  }
+}
+function sorted(list,st){
+  const k=st.sort,dir=st.dir;
+  return list.slice().sort((a,b)=>{
+    const x=sortVal(a,k),y=sortVal(b,k);
+    let c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"fr");
+    if(c===0)c=D(b).score-D(a).score||low(a.name).localeCompare(low(b.name),"fr");
+    else c*=dir;
+    return c;
+  });
+}
+function optHTML(c,v){
+  const opts=c.noBlank?c.opts:["",...c.opts];
+  const has=!v||c.opts.includes(v);
+  return (has?"":`<option selected>${esc(v)}</option>`)+opts.map(o=>`<option value="${esc(o)}"${o===(v||"")?" selected":""}>${o?esc(o):"—"}</option>`).join("");
+}
+function vchip(d){const g=GROUPS.find(x=>x.id===d.group);return `<span class="vchip ${d.group}"><i aria-hidden="true">${g.icon}</i>${esc(d.verdict)}</span>`;}
+function scoreTitle(d){const p=d.parts;return `Succession ${p.succ}/35 · Taille ${p.taille}/25 · Fit ${p.fit}/20 · Leviers ${p.lev}/10 · Données ${p.data}/10`;}
+function cellHTML(key,col,k,it,d,left){
+  const id=esc(it.id),st=left!=null?` style="left:${left}px"`:"";
+  switch(col.kind){
+    case "sel":return `<td class="stk s0 selc"${st}><input type="checkbox" class="rowsel" data-id="${id}" aria-label="Sélectionner ${esc(it.name)}"${SHEETS[key].sel.has(it.id)?" checked":""}></td>`;
+    case "name":return `<td class="stk s1"${st}><div class="nm"><input class="cell" data-id="${id}" data-k="name" value="${esc(it.name)}" placeholder="Nom de la cible" aria-label="Entreprise"><button type="button" class="open" data-open="${id}" title="Ouvrir la fiche" aria-label="Ouvrir la fiche de ${esc(it.name)}">↗</button></div></td>`;
+    case "text":return `<td><input class="cell" data-id="${id}" data-k="${k}" value="${esc(it[k])}"${col.ph?` placeholder="${esc(col.ph)}"`:""} aria-label="${esc(col.label)}"></td>`;
+    case "num":return `<td><input class="cell num" inputmode="decimal" data-id="${id}" data-k="${k}" value="${it[k]==null?"":esc(it[k])}" aria-label="${esc(col.label)}"></td>`;
+    case "select":return `<td><select class="cell${it[k]?"":" blank"}" data-id="${id}" data-k="${k}" aria-label="${esc(col.label)}">${optHTML(col,it[k])}</select></td>`;
+    case "prov":{
+      const v=it[k],has=v!=null&&v!=="",p=pvOf(it,k);
+      let ph="";
+      if(!has&&(k==="ca"||k==="baiia")){const s=d.sz[k==="ca"?"ca":"eb"];if(s)ph="≈ "+fmtM(s.mid);}
+      const cls="cell pcell"+(has?(p==="verifie"?" pvv":" pe"):"")+(col.num?" num":"");
+      const srcT=it.src&&it.src[k]?" · Source : "+it.src[k]:"";
+      const tip=(p==="verifie"?"Vérifié. Cliquer pour marquer estimé.":"Estimé. Cliquer pour marquer vérifié.")+srcT;
+      const tog=has?`<button type="button" class="ptog ${p==="verifie"?"v":"e"}" data-ptog="${id}" data-k="${k}" title="${esc(tip)}" aria-label="${esc(col.label)} : ${p==="verifie"?"vérifié":"estimé"}">${p==="verifie"?"✓":"≈"}</button>`:"";
+      return `<td class="pcw"><input class="${cls}"${col.num?' inputmode="decimal"':""} data-id="${id}" data-k="${k}" value="${has?esc(v):""}"${ph?` placeholder="${esc(ph)}" title="${esc(sizeTitle(it,d.sz,k==="ca"?"ca":"eb"))}"`:""} aria-label="${esc(col.label)}">${tog}</td>`;
+    }
+    case "bench":{
+      const cur=it.bench||"",b=d.sz.b;
+      return `<td><select class="cell${cur?"":" blank"}" data-id="${id}" data-k="bench" aria-label="Industrie de référence"><option value="">${esc("Par défaut : "+(b?b.label:"—"))}</option>${BENCH.map(x=>`<option value="${esc(x.id)}"${x.id===cur?" selected":""}>${esc(x.label)}</option>`).join("")}</select></td>`;
+    }
+    case "act":{
+      const btns=key==="radar"?`<button class="btn sm dark" data-move="backlog" data-id="${id}">→ Backlog</button>`:key==="backlog"?`<button class="btn sm dark" data-move="envoye" data-id="${id}">Envoyé →</button>`:"";
+      return `<td><div class="act">${btns}</div></td>`;
+    }
+    default:{
+      let h="";
+      switch(k){
+        case "_score":h=`<div class="score" title="${esc(scoreTitle(d))}"><b>${d.score}</b><span class="sbar"><i style="width:${d.score}%"></i></span></div>`;break;
+        case "_verdict":h=vchip(d);break;
+        case "_tier":h=d.tier?`<span class="tier" title="Tier ${d.tier} : ${d.tier==="A"?"déjà en processus":d.tier==="B"?"processus avorté":"hors marché"}">${d.tier}</span>`:"—";break;
+        case "_age":h=d.age==null?"—":d.age+" ans";break;
+        case "_mult":h=d.mult==null?"—":`<span class="${d.mult>CFG.multMax?"warnv":""}">${d.mult.toFixed(1).replace(".",",")}x</span>`;break;
+        case "_flags":h=(it.flags||[]).length||"—";break;
+        case "_complet":h=`<span class="meter"><i style="width:${Math.round(d.complet*100)}%"></i></span>${Math.round(d.complet*100)} %`;break;
+        case "_jours":h=d.jours==null?"—":d.jours+" j";break;
+        case "_stage":h=esc(STAGE_N[it.stage]||it.stage);break;
+        case "_ca":h=pvHTML(d.sz.ca,sizeTitle(it,d.sz,"ca"));break;
+        case "_eb":h=pvHTML(d.sz.eb,sizeTitle(it,d.sz,"eb"));break;
+        case "_ve":h=pvHTML(d.sz.ve,sizeTitle(it,d.sz,"ve"));break;
+      }
+      return `<td class="calc">${h}</td>`;
+    }
+  }
+}
+function renderSheet(key,list,emptyText){
+  const host=$("#sheet-"+key),st=SHEETS[key];
+  const keys=PRESETS[st.preset]||PRESETS.essentiel;
+  const rows=sorted(list,st);
+  const visibleIds=new Set(rows.map(r=>r.id));
+  [...st.sel].forEach(id=>{if(!visibleIds.has(id))st.sel.delete(id);});
+  let left=0;const lefts={};
+  keys.forEach(k=>{if(k==="_sel"||k==="name"){lefts[k]=left;left+=COLS[k].w;}});
+  const width=keys.reduce((s,k)=>s+COLS[k].w,0);
+  const groups=[];keys.forEach(k=>{const g=COLS[k].grp;const last=groups[groups.length-1];if(last&&last.g===g)last.n++;else groups.push({g,n:1});});
+  const allSel=rows.length&&rows.every(r=>st.sel.has(r.id));
+  let html=`<div class="ptool" style="margin:0 0 8px">`;
+  if(key!=="funnel")html+=`<div class="seg" role="group" aria-label="Colonnes affichées">${Object.keys(PRESET_N).map(p=>`<button type="button" data-preset="${p}" data-sheet="${key}" class="${st.preset===p?"on":""}">${PRESET_N[p]}</button>`).join("")}</div>`;
+  else html+=`<span></span>`;
+  html+=`<span style="font-size:11.5px;color:var(--ink-3)">${rows.length} cible${rows.length>1?"s":""} affichée${rows.length>1?"s":""}</span></div>`;
+  html+=`<div class="sheet-wrap" style="--stick:${left}px"><div class="sheet-scroll" data-scroll="${key}"><table class="sheet" style="width:${width}px"><colgroup>${keys.map(k=>`<col style="width:${COLS[k].w}px">`).join("")}</colgroup><thead>`;
+  html+=`<tr class="g">`+groups.map(g=>{
+    const label=g.g==="Calculé"?"Calculé auto":g.g;
+    return `<th colspan="${g.n}" class="${g.g==="Calculé"?"calcg":""}">${esc(label)}</th>`;
+  }).join("")+`</tr>`;
+  html+=`<tr class="c">`+keys.map(k=>{
+    const c=COLS[k];const stick=lefts[k]!=null;
+    const cls=[stick?"stk":"",k==="_sel"?"selc":""].join(" ").trim();
+    const style=stick?` style="left:${lefts[k]}px"`:"";
+    if(k==="_sel")return `<th class="${cls}"${style}><input type="checkbox" data-selall="${key}" aria-label="Tout sélectionner"${allSel?" checked":""}></th>`;
+    if(k==="_act")return `<th></th>`;
+    const ar=st.sort===k?`<span class="ar">${st.dir<0?"↓":"↑"}</span>`:"";
+    return `<th class="${cls}"${style} data-sort="${k}" data-sheet="${key}" title="Trier par ${esc(c.label)}">${esc(c.label)}${c.kind==="calc"?'<i class="fx">ƒ</i>':""}${ar}</th>`;
+  }).join("")+`</tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="${keys.length}" class="empty">${emptyText}</td></tr>`;
+  rows.forEach(it=>{
+    const d=D(it);
+    html+=`<tr class="${d.group}" data-row="${esc(it.id)}">`+keys.map(k=>cellHTML(key,COLS[k],k,it,d,lefts[k])).join("")+`</tr>`;
+  });
+  html+=`</tbody></table></div><div class="fb"></div><div class="sheet-foot"><span><span class="fx">ƒ</span> colonne calculée : verdict selon tes seuils (CA ${CFG.caMin}–${CFG.caMax} M$, BAIIA ${CFG.ebMin}–${CFG.ebMax} M$, multiple ≤ ${CFG.multMax}x), score sur 100. CA, BAIIA et VE : valeur centrale, survole pour la fourchette et le calcul.</span><span class="plegend"><span class="pv e">≈ estimé</span><span class="pv v">vérifié ✓</span><span>Tri : ${esc(COLS[st.sort]?COLS[st.sort].label:"")} ${st.dir<0?"↓":"↑"}</span></span></div></div>`;
+  const prev=$(".sheet-scroll",host);const sl=prev?prev.scrollLeft:0,stp=prev?prev.scrollTop:0;
+  host.innerHTML=html;
+  const sc=$(".sheet-scroll",host);sc.scrollLeft=sl;sc.scrollTop=stp;
+  updateFades(sc);
+  renderBulk(key);
+}
+function updateFades(sc){
+  const w=sc.parentElement;
+  w.classList.toggle("fl",sc.scrollLeft>2);
+  w.classList.toggle("fr",sc.scrollLeft+sc.clientWidth<sc.scrollWidth-2);
+  w.classList.toggle("fbt",sc.scrollTop+sc.clientHeight<sc.scrollHeight-2);
+}
+function renderBulk(key){
+  const el=$("#bulk-"+key);if(!el)return;
+  const n=SHEETS[key].sel.size;
+  if(!n){el.hidden=true;el.innerHTML="";return;}
+  el.hidden=false;
+  const acts=key==="radar"
+    ?`<button class="btn sm" data-bulk="backlog">Promouvoir au Backlog</button><button class="btn sm" data-bulk="pass">Écarter (Pass)</button>`
+    :`<button class="btn sm" data-bulk="envoye">Marquer envoyé</button><button class="btn sm" data-bulk="radar">Retour au Radar</button><button class="btn sm" data-bulk="pass">Écarter (Pass)</button>`;
+  el.innerHTML=`<b>${n} sélectionnée${n>1?"s":""}</b>${acts}<button class="btn sm danger" data-bulk="delete">Supprimer</button><button class="btn sm" data-bulk="clear">Désélectionner</button>`;
+  el.dataset.sheet=key;
+}
+
+/* ---------- tickets foncés ---------- */
+function contactHTML(it){
+  if(it.contactName||it.contactEmail)return `<div class="t-contact">✉ ${esc(it.contactName)}${it.contactName&&it.contactEmail?" · ":""}${esc(it.contactEmail)}</div>`;
+  return `<div class="t-contact miss">✉ Point de contact non identifié</div>`;
+}
+function ticketHTML(it,mode){
+  const d=D(it),fl=(it.flags||[]).length;
+  let h=`<article class="ticket ${d.group}" data-open="${esc(it.id)}" tabindex="0"${mode==="suivi"?` draggable="true" data-drag="${esc(it.id)}"`:""}>
+    <div class="t-top"><div class="t-name">${esc(it.name||"Sans nom")}${it.suffix?` <small>${esc(it.suffix)}</small>`:""}</div><span class="t-score" title="${esc(scoreTitle(d))}">${d.score}</span></div>
+    <div class="t-meta">${[it.verticale,it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>
+    <div class="t-row">${vchip(d)}<span class="t-flags">${fl?fl+" red flag"+(fl>1?"s":""):""}</span></div>
+    ${contactHTML(it)}`;
+  if(mode==="envoi"){
+    const due=it.followup&&it.followup<=today();
+    h+=`<div class="t-send"><span>${esc(it.channel||"—")} · <b>${esc(it.sendStatus||"Envoyé")}</b></span><span>${due?`<span class="due">Relance due ${esc(it.followup)}</span>`:it.sendDate?"envoyé "+esc(it.sendDate):""}</span></div>
+    <div class="t-cta"><button class="btn" data-move="backlog" data-id="${esc(it.id)}">↩ Backlog</button><button class="btn go" data-move="secondcall" data-id="${esc(it.id)}">Réponse → 2e appel</button></div>`;
+  }
+  return h+`</article>`;
+}
+
+/* ---------- Univers et tri brutal ---------- */
+const TRI_FIELDS={
+  verticale:{label:"Verticale",kind:"set",opts:VERTICALES.filter(v=>v!=="À classer"),def:"Hors secteur"},
+  province:{label:"Province",kind:"set",opts:PROVINCES,def:"Hors géographie"},
+  dispo:{label:"Propriété disponible",kind:"flag",def:"Déjà détenue / non disponible"},
+  ageEnt:{label:"Âge de l'entreprise",unit:"ans",def:"Entreprise trop jeune"},
+  ageFond:{label:"Âge du fondateur",unit:"ans",def:"Fondateur trop jeune"},
+  employes:{label:"Employés",unit:"",def:"Trop petite"},
+  ca:{label:"CA",unit:"M$",def:"CA hors fourchette"},
+  baiia:{label:"BAIIA",unit:"M$",def:"BAIIA hors fourchette"},
+  multiple:{label:"Multiple prix / BAIIA",unit:"x",def:"Trop chère"},
+  prix:{label:"Prix demandé",unit:"M$",def:"Prix hors budget"},
+};
+const DEFAULT_STEPS=[
+  {field:"verticale",label:"Hors secteur",values:["ÉNER","AGRO","SV","Défense","Services B2B"],unknown:"keep",on:true},
+  {field:"province",label:"Hors géographie",values:["QC","ON"],unknown:"keep",on:true},
+  {field:"dispo",label:"Déjà détenue / non disponible",unknown:"keep",on:true},
+  {field:"ageEnt",label:"Entreprise trop jeune",min:20,max:null,unknown:"keep",on:true},
+  {field:"ageFond",label:"Fondateur trop jeune",min:55,max:null,unknown:"keep",on:true},
+  {field:"employes",label:"Trop petite",min:20,max:null,unknown:"keep",on:true},
+  {field:"ca",label:"CA hors fourchette",min:5,max:35,unknown:"keep",on:true},
+  {field:"baiia",label:"BAIIA hors fourchette",min:0.5,max:5,unknown:"keep",on:true},
+  {field:"multiple",label:"Trop chère",min:null,max:7,unknown:"keep",on:true},
+];
+let TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};
+let UNIV=new Map(),UROWS=[],TFOCUS=null,TRES=null;
+const fmt=n=>Number(n||0).toLocaleString("fr-CA");
+
+function triVal(p,f){
+  switch(f){
+    case "verticale":return p.vt&&p.vt!=="À classer"?p.vt:null;
+    case "province":return p.p||null;
+    case "dispo":return p.x||"";
+    case "ageEnt":{const y=num(p.f);return y&&y>1800&&y<=YEAR?YEAR-y:null;}
+    case "ageFond":return num(p.ad);
+    case "employes":return rng(p.e);
+    case "ca":return rng(p.ca);
+    case "baiia":return rng(p.eb);
+    case "multiple":{const px=num(p.px),eb=rng(p.eb);return px!=null&&eb&&eb.mid>0?px/eb.mid:null;}
+    case "prix":return num(p.px);
+  }
+  return null;
+}
+function stepTest(s,p){
+  const def=TRI_FIELDS[s.field];if(!def)return true;
+  const v=triVal(p,s.field);
+  if(def.kind==="flag")return !v;
+  if(v==null)return null;
+  if(def.kind==="set")return (s.values||[]).includes(v);
+  const lo=typeof v==="object"?v.lo:v,hi=typeof v==="object"?v.hi:v;
+  if(s.min!=null&&hi<s.min)return false;
+  if(s.max!=null&&lo>s.max)return false;
+  return true;
+}
+function runTri(){
+  const steps=TRI.steps.filter(s=>s.on&&TRI_FIELDS[s.field]);
+  const N=UROWS.length;
+  const st=steps.map(()=>({okok:0,okunk:0,unkunk:0,okout:0,unkout:0,unkdrop:0}));
+  const fate=new Array(N);
+  for(let i=0;i<N;i++){
+    const p=UROWS[i];let state="ok";const miss=[];let done=false;
+    for(let j=0;j<steps.length;j++){
+      const r=stepTest(steps[j],p),S=st[j];
+      if(r===true){state==="ok"?S.okok++:S.unkunk++;continue;}
+      if(r===null&&steps[j].unknown!=="drop"){miss.push(steps[j].field);if(state==="ok"){S.okunk++;state="unk";}else S.unkunk++;continue;}
+      state==="ok"?S.okout++:S.unkout++;
+      if(r===null)S.unkdrop++;
+      fate[i]={out:j,why:r===null?"unk":"fail",state,miss};done=true;break;
+    }
+    if(!done)fate[i]={out:-1,state,miss};
+  }
+  const cols=[{ok:N,unk:0,out:0}];
+  st.forEach(S=>cols.push({ok:S.okok,unk:S.okunk+S.unkunk,out:S.okout+S.unkout}));
+  return {steps,st,cols,fate,N};
+}
+function trackerNames(){return new Set(all().map(it=>normName(it.name)).filter(n=>n.length>2));}
+function wrapLabel(s,max){
+  const w=String(s).split(/\s+/),lines=[""];
+  w.forEach(x=>{const l=lines[lines.length-1];if((l+" "+x).trim().length>max&&l)lines.push(x);else lines[lines.length-1]=(l+" "+x).trim();});
+  if(lines.length>2){lines.length=2;lines[1]=lines[1].slice(0,max-1)+"…";}
+  return lines;
+}
+
+/* Sankey d'attrition : le tronc rétrécit, chaque étape détache ses éliminées */
+function renderTriSankey(R){
+  const host=$("#sankey"),tip=$("#skTip");
+  $("#skLegend").innerHTML=[["var(--keep)","Confirmées sur les critères"],["var(--check)","Passent sans donnée"],["var(--out)","Éliminées"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique une colonne ou une coupe pour voir ses entreprises.</span>`;
+  if(!R.N){host.innerHTML=`<div class="empty">Aucun profil importé. Utilise « + Importer des profils ».</div>`;return;}
+  const S=R.steps.length;
+  const avail=host.parentElement.clientWidth||1100;
+  const W=Math.max(avail,(S+1)*128,640);
+  const NW=12,top=52,G=26,TH=Math.max(220,Math.min(330,140+S*22));
+  const k=TH/R.N,H=top+TH+G+34;
+  const xs=[...Array(S+1)].map((_,c)=>S?Math.round(c*(W-NW-2)/S):0);
+  const rem=c=>R.cols[c].ok+R.cols[c].unk;
+  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Entonnoir de tri : ${fmt(R.N)} profils au départ, ${fmt(rem(S))} en shortlist">`;
+  for(let c=0;c<=S;c++){
+    const lines=wrapLabel(c===0?"Univers":R.steps[c-1].label,20);
+    const anchor=c===0?"start":c===S?"end":"middle";
+    const x=c===0?xs[c]:c===S?xs[c]+NW:xs[c]+NW/2;
+    svg+=`<text class="sk-col" y="14" text-anchor="${anchor}">${lines.map((l,i)=>`<tspan x="${x}" dy="${i?13:0}">${esc(l)}</tspan>`).join("")}</text>`;
+  }
+  const bands=[];
+  for(let c=1;c<=S;c++){
+    const T=R.st[c-1],prev=R.cols[c-1],cur=R.cols[c];
+    const xa=xs[c-1]+NW,xb=xs[c];
+    let so=top,su=top+prev.ok*k,dU=top+cur.ok*k,dL=top+rem(c)*k+G;
+    const add=(n,sy,ty,g,kind)=>{if(n)bands.push({c,n,sy,ty,h:n*k,g,kind,xa,xb});};
+    add(T.okok,so,top,"keep","pass");so+=T.okok*k;
+    add(T.okunk,so,dU,"check","newunk");so+=T.okunk*k;dU+=T.okunk*k;
+    add(T.okout,so,dL,"out","cut");dL+=T.okout*k;
+    add(T.unkunk,su,dU,"check","unk");su+=T.unkunk*k;
+    add(T.unkout,su,dL,"out","cut");
+  }
+  const colorOf=g=>GROUPS.find(x=>x.id===g).c;
+  bands.forEach((b,i)=>{
+    const xm=(b.xa+b.xb)/2,h=Math.max(b.h,0.8);
+    const d=`M${b.xa},${b.sy} C${xm},${b.sy} ${xm},${b.ty} ${b.xb},${b.ty} L${b.xb},${b.ty+h} C${xm},${b.ty+h} ${xm},${b.sy+h} ${b.xa},${b.sy+h} Z`;
+    const dim=TFOCUS&&TFOCUS.c!==b.c;
+    svg+=`<path class="sk-link" data-b="${i}" d="${d}" fill="${colorOf(b.g)}" fill-opacity="${dim?0.22:0.45}"></path>`;
+  });
+  for(let c=0;c<=S;c++){
+    const h=Math.max(2,rem(c)*k),on=TFOCUS&&TFOCUS.type==="trunk"&&TFOCUS.c===c;
+    const last=c===S,lx=last?xs[c]-7:xs[c]+NW+7;
+    svg+=`<g class="sk-node${on?" on":""}" data-tt="trunk" data-c="${c}" tabindex="0" role="button" aria-label="${esc(c===0?"Univers":R.steps[c-1].label)} : ${fmt(rem(c))} restantes"><rect x="${xs[c]}" y="${top}" width="${NW}" height="${h}" rx="2"></rect><rect x="${xs[c]-6}" y="${top-4}" width="${NW+12}" height="${h+8}" fill="transparent"></rect></g>`;
+    svg+=`<text class="sk-lab" x="${lx}" y="${top+12}" text-anchor="${last?"end":"start"}">${fmt(rem(c))}${c===0?" <tspan>profils</tspan>":last?" <tspan>en shortlist</tspan>":""}</text>`;
+  }
+  for(let c=1;c<=S;c++){
+    const n=R.cols[c].out;if(!n)continue;
+    const y=top+rem(c)*k+G,h=Math.max(2,n*k),on=TFOCUS&&TFOCUS.type==="cut"&&TFOCUS.c===c;
+    svg+=`<g class="sk-node${on?" on":""}" data-tt="cut" data-c="${c}" tabindex="0" role="button" aria-label="${esc(R.steps[c-1].label)} : ${fmt(n)} éliminées"><rect x="${xs[c]}" y="${y}" width="${NW}" height="${h}" rx="2" style="fill:#7D838C"></rect><rect x="${xs[c]-6}" y="${y-4}" width="${NW+12}" height="${h+8}" fill="transparent"></rect></g>`;
+    svg+=`<text class="sk-lab" x="${xs[c]+NW/2}" y="${y+h+15}" text-anchor="${c===S?"end":"middle"}">−${fmt(n)}</text>`;
+  }
+  svg+=`</svg>`;
+  host.innerHTML=svg;
+  const box=$(".skbox");
+  $$(".sk-link",host).forEach(p=>{
+    const b=bands[+p.dataset.b],lab=R.steps[b.c-1].label;
+    const txt=b.kind==="pass"?`<b>${fmt(b.n)}</b> confirmées passent « ${esc(lab)} »`:b.kind==="newunk"?`<b>${fmt(b.n)}</b> passent « ${esc(lab)} » sans donnée`:b.kind==="unk"?`<b>${fmt(b.n)}</b> déjà sans donnée passent « ${esc(lab)} »`:`<b>${fmt(b.n)}</b> éliminées par « ${esc(lab)} »`;
+    p.addEventListener("mousemove",e=>{
+      const r=box.getBoundingClientRect();tip.hidden=false;tip.innerHTML=txt;
+      let x=e.clientX-r.left+14;if(x+tip.offsetWidth>r.width-8)x=e.clientX-r.left-tip.offsetWidth-14;
+      tip.style.left=x+"px";tip.style.top=(e.clientY-r.top+14)+"px";p.setAttribute("fill-opacity",0.8);
+    });
+    p.addEventListener("mouseleave",()=>{tip.hidden=true;p.setAttribute("fill-opacity",TFOCUS&&TFOCUS.c!==b.c?0.22:0.45);});
+  });
+  $$(".sk-node",host).forEach(g=>{
+    const act=()=>{const t={type:g.dataset.tt,c:+g.dataset.c};TFOCUS=(TFOCUS&&TFOCUS.type===t.type&&TFOCUS.c===t.c)?null:t;renderFunnel();};
+    g.addEventListener("click",act);
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act();}});
+  });
+}
+function triInsights(R){
+  if(!R.N)return [];
+  const out=[],S=R.steps.length,last=R.cols[S];
+  out.push({g:"keep",t:`Shortlist : <b>${fmt(last.ok+last.unk)}</b> profils sur ${fmt(R.N)} (${pct(last.ok+last.unk,R.N)}), dont ${fmt(last.ok)} confirmés sur tous les critères.`});
+  if(S){
+    let bi=0;R.st.forEach((x,j)=>{if(x.okout+x.unkout>R.st[bi].okout+R.st[bi].unkout)bi=j;});
+    const n=R.st[bi].okout+R.st[bi].unkout,inN=R.cols[bi].ok+R.cols[bi].unk;
+    if(n)out.push({g:"out",t:`Plus grosse coupe : <b>${esc(R.steps[bi].label)}</b>, −${fmt(n)} (${pct(n,inN)} de ce qui y arrive).`});
+  }
+  if(last.unk){
+    const cnt=new Map();R.fate.forEach(f=>{if(f.out===-1&&f.state==="unk")f.miss.forEach(m=>cnt.set(m,(cnt.get(m)||0)+1));});
+    const t=[...cnt].sort((a,b)=>b[1]-a[1])[0];
+    if(t)out.push({g:"check",t:`<b>${fmt(last.unk)}</b> profils de la shortlist passent sans donnée, surtout sur « ${esc(TRI_FIELDS[t[0]].label)} » (${fmt(t[1])}). À vérifier avant l'appel.`});
+  }
+  const dr=R.st.map((x,j)=>[x.unkdrop,j]).filter(x=>x[0]).sort((a,b)=>b[0]-a[0])[0];
+  if(dr)out.push({g:"",t:`« ${esc(R.steps[dr[1]].label)} » élimine ${fmt(dr[0])} profils faute de donnée (réglé sur « éliminer »).`});
+  return out.slice(0,4);
+}
+function renderSteps(R){
+  let ei=0;
+  const rows=TRI.steps.map((s,i)=>{
+    const def=TRI_FIELDS[s.field]||{label:s.field};
+    const rule=def.kind==="flag"?`<span>Retire les entreprises marquées détenues par un fonds, un stratégique ou une coopérative, déjà acquises ou fermées.</span>`:def.kind==="set"
+      ?`<span>${esc(def.label)} parmi</span>`+def.opts.map(o=>`<button type="button" class="fchip${(s.values||[]).includes(o)?" on":""}" data-stv="${i}" data-v="${esc(o)}" aria-pressed="${(s.values||[]).includes(o)}">${esc(o)}</button>`).join("")
+      :`<span>${esc(def.label)} ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":String(s.min).replace(".",",")}" aria-label="Minimum de l'étape ${i+1}" inputmode="decimal"><span>et ≤</span><input class="num" data-stmax="${i}" value="${s.max==null?"":String(s.max).replace(".",",")}" aria-label="Maximum de l'étape ${i+1}" inputmode="decimal"><span>${esc(def.unit||"")}</span>`;
+    let count=`<span style="color:var(--ink-3)">Étape ignorée</span>`;
+    if(s.on&&TRI_FIELDS[s.field]&&R.N){
+      const j=ei++,S=R.st[j],inN=R.cols[j].ok+R.cols[j].unk,cut=S.okout+S.unkout,rest=R.cols[j+1].ok+R.cols[j+1].unk;
+      count=`${fmt(inN)} entrent · <span class="cut">−${fmt(cut)}</span>${S.unkdrop?` (dont ${fmt(S.unkdrop)} sans donnée)`:""} · <b>${fmt(rest)}</b> restent${S.okunk?` · ${fmt(S.okunk)} sans donnée`:""}`;
+    }else if(s.on)count="—";
+    return `<div class="st-row${s.on?"":" off"}"><span class="st-n">${i+1}</span><input type="checkbox" data-ston="${i}"${s.on?" checked":""} aria-label="Activer l'étape ${i+1}"><input type="text" data-stlabel="${i}" value="${esc(s.label)}" aria-label="Nom de l'étape ${i+1}"><div class="st-rule">${rule}</div><label class="st-unk">Si inconnu <select data-stunk="${i}"><option value="keep"${s.unknown!=="drop"?" selected":""}>garder</option><option value="drop"${s.unknown==="drop"?" selected":""}>éliminer</option></select></label><div class="st-count">${count}</div><div class="st-btns"><button type="button" data-stup="${i}" aria-label="Monter l'étape ${i+1}">↑</button><button type="button" data-stdown="${i}" aria-label="Descendre l'étape ${i+1}">↓</button><button type="button" data-stdel="${i}" aria-label="Retirer l'étape ${i+1}">✕</button></div></div>`;
+  }).join("");
+  $("#steps").innerHTML=`<div class="st-head"><b>Étapes du tri</b><span>Appliquées dans l'ordre. Une étape décochée est ignorée.</span><div class="right"><select id="stAdd" aria-label="Ajouter une étape"><option value="">+ Ajouter une étape…</option>${Object.entries(TRI_FIELDS).map(([k,d])=>`<option value="${k}">${esc(d.label)}</option>`).join("")}</select><button type="button" class="btn sm" id="stReset">Étapes par défaut</button></div></div>${rows}`;
+}
+let triChain=Promise.resolve();
+function saveTri(){
+  TFOCUS=null;renderFunnel();
+  if(!db)return;
+  const body={steps:TRI.steps.map(s=>clean(s))};
+  triChain=triChain.then(()=>db.doc("config/tri").set(body)).catch(writeErr);
+}
+$("#steps").addEventListener("change",e=>{
+  const t=e.target,d=t.dataset;
+  if(t.id==="stAdd"){const k=t.value;if(!k)return;const def=TRI_FIELDS[k];TRI.steps.push(def.kind==="flag"?{field:k,label:def.def,unknown:"keep",on:true}:def.kind==="set"?{field:k,label:def.def,values:def.opts.slice(),unknown:"keep",on:true}:{field:k,label:def.def,min:null,max:null,unknown:"keep",on:true});saveTri();return;}
+  if(d.ston!=null){TRI.steps[+d.ston].on=t.checked;saveTri();return;}
+  if(d.stlabel!=null){TRI.steps[+d.stlabel].label=str(t.value)||TRI_FIELDS[TRI.steps[+d.stlabel].field].def;saveTri();return;}
+  if(d.stmin!=null){TRI.steps[+d.stmin].min=num(t.value);saveTri();return;}
+  if(d.stmax!=null){TRI.steps[+d.stmax].max=num(t.value);saveTri();return;}
+  if(d.stunk!=null){TRI.steps[+d.stunk].unknown=t.value;saveTri();return;}
+});
+$("#steps").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+  if(t.id==="stReset"){TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};saveTri();return;}
+  if(d.stv!=null){const s=TRI.steps[+d.stv];const v=new Set(s.values||[]);v.has(d.v)?v.delete(d.v):v.add(d.v);s.values=[...v];saveTri();return;}
+  const sw=(i,j)=>{if(j<0||j>=TRI.steps.length)return;[TRI.steps[i],TRI.steps[j]]=[TRI.steps[j],TRI.steps[i]];saveTri();};
+  if(d.stup!=null)return sw(+d.stup,+d.stup-1);
+  if(d.stdown!=null)return sw(+d.stdown,+d.stdown+1);
+  if(d.stdel!=null){TRI.steps.splice(+d.stdel,1);saveTri();}
+});
+function statusHTML(f,R){
+  if(f.out>=0)return `<span class="vchip out"><i aria-hidden="true">✕</i>${esc(R.steps[f.out].label)}${f.why==="unk"?" (sans donnée)":""}</span>`;
+  if(f.state==="ok")return `<span class="vchip keep"><i aria-hidden="true">✓</i>Confirmée</span>`;
+  return `<span class="vchip check" title="Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}"><i aria-hidden="true">?</i>Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}</span>`;
+}
+function renderTriList(R){
+  const host=$("#triList"),S=R.steps.length;
+  if(!R.N){host.innerHTML="";$("#focusbar").innerHTML="";return;}
+  const f=TFOCUS||{type:"trunk",c:S};
+  const idx=[];
+  R.fate.forEach((x,i)=>{if(f.type==="trunk"?(x.out===-1||x.out>=f.c):x.out===f.c-1)idx.push(i);});
+  idx.sort((a,b)=>{const fa=R.fate[a],fb=R.fate[b];const ra=fa.out===-1?(fa.state==="ok"?0:1):2,rb=fb.out===-1?(fb.state==="ok"?0:1):2;if(ra!==rb)return ra-rb;return (triVal(UROWS[b],"ageEnt")||-1)-(triVal(UROWS[a],"ageEnt")||-1);});
+  const lab=f.c===0?"Univers":R.steps[f.c-1].label;
+  const title=f.type==="cut"?`Éliminées par <b>${esc(lab)}</b> : ${fmt(idx.length)}`:f.c===S?`<b>Shortlist</b> : ${fmt(idx.length)} profils`:`Restantes après <b>${esc(lab)}</b> : ${fmt(idx.length)}`;
+  const finalTrunk=f.type==="trunk"&&f.c===S;
+  const nConf=finalTrunk?idx.filter(i=>R.fate[i].state==="ok").length:0;
+  $("#focusbar").innerHTML=`<span>${title}${idx.length>300?" · 300 premières affichées":""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir à la shortlist</button>`:""}${finalTrunk&&idx.length?`<span style="margin-left:auto;display:flex;gap:8px"><button class="btn sm dark" id="promoConf"${nConf?"":" disabled"}>Envoyer les ${fmt(nConf)} confirmées au Radar</button><button class="btn sm" id="promoAll">Envoyer les ${fmt(idx.length)} au Radar</button></span>`:""}`;
+  const u=$("#unfocusT");if(u)u.onclick=()=>{TFOCUS=null;renderFunnel();};
+  const pc=$("#promoConf");if(pc)pc.onclick=()=>promote(idx.filter(i=>R.fate[i].state==="ok").map(i=>UROWS[i]));
+  const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(idx.map(i=>UROWS[i]));
+  const names=trackerNames();
+  const cols=[["Entreprise",240],["Verticale",104],["Ville",140],["Prov.",62],["Fondée",70],["Âge",66],["Âge fond.",80],["Employés",88],["CA (M$)",80],["BAIIA (M$)",88],["Prix (M$)",80],["Statut",320],["Lot",190],["",112]];
+  const width=cols.reduce((s,c)=>s+c[1],0);
+  const rows=idx.slice(0,300).map(i=>{
+    const p=UROWS[i],fa=R.fate[i],age=triVal(p,"ageEnt");
+    const inT=names.has(normName(p.n));
+    const g=fa.out>=0?"out":fa.state==="ok"?"keep":"check";
+    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(p.vt||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${esc(p.ca||"—")}</td><td class="calc">${esc(p.eb||"—")}</td><td class="calc">${p.px==null||p.px===""?"—":esc(p.px)}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${inT?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:""}</div></td></tr>`;
+  }).join("");
+  host.innerHTML=`<div class="sheet-wrap" style="--stick:240px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map((c,i)=>`<th${i===0?' class="stk" style="left:0;top:0"':' style="top:0"'}>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
+  $$("[data-promo]",host).forEach(b=>b.onclick=()=>promote([UROWS[+b.dataset.promo]]));
+  updateFades($(".sheet-scroll",host));
+}
+async function promote(list){
+  if(!db){toast("Base indisponible.","err");return;}
+  const names=trackerNames();let add=[],skip=0;
+  list.forEach(p=>{
+    const nn=normName(p.n);
+    if(names.has(nn)){skip++;return;}
+    names.add(nn);
+    add.push(normalize({exclusion:p.x,name:p.n,neq:p.neq,ville:p.v,province:p.p,region:p.r,soussecteur:p.s,verticale:p.vt,fondation:p.f,employes:p.e,ca:p.ca,baiia:p.eb,prix:p.px,ageFond:p.ad,site:p.site,source:p.src||p._lot,notes:"Shortlist du tri, lot « "+p._lot+" »."},"radar"));
+  });
+  if(add.length>300){toast("300 au maximum par envoi : les 300 premières partent au Radar.","err");add=add.slice(0,300);}
+  const ok=await writeMany(add,"Envoi au Radar");
+  toast(ok+" envoyée"+(ok>1?"s":"")+" au Radar"+(skip?", "+skip+" déjà au tracker":"")+".");
+}
+function renderLots(){
+  const g=new Map();
+  UNIV.forEach((d,id)=>{const b=d.batch||id;if(!g.has(b))g.set(b,{label:d.label||b,date:d.date||"",n:0,ids:[]});const x=g.get(b);x.n+=(d.rows||[]).length;x.ids.push(id);});
+  $("#lots").innerHTML=g.size?`<table><thead><tr><th>Lot importé</th><th>Date</th><th>Profils</th><th></th></tr></thead><tbody>${[...g].map(([b,x])=>`<tr><td>${esc(x.label)}</td><td>${esc(x.date)}</td><td style="font-variant-numeric:tabular-nums">${fmt(x.n)}</td><td style="text-align:right"><button class="btn sm danger" data-dellot="${esc(b)}">Supprimer le lot</button></td></tr>`).join("")}</tbody></table>`:"";
+  $$("[data-dellot]").forEach(btn=>btn.onclick=async()=>{
+    if(!btn.classList.contains("armed")){btn.classList.add("armed");btn.textContent="Confirmer";setTimeout(()=>{btn.classList.remove("armed");btn.textContent="Supprimer le lot";},4000);return;}
+    const ids=g.get(btn.dataset.dellot).ids;btn.disabled=true;
+    for(const id of ids){try{await db.collection("univers").doc(id).delete();}catch(e){writeErr(e);}}
+    toast("Lot supprimé.");
+  });
+}
+function renderFunnel(){
+  const R=TRES=runTri();
+  $("#triIns").innerHTML=triInsights(R).map(x=>`<div class="ins ${x.g}">${x.t}</div>`).join("");
+  renderTriSankey(R);
+  renderSteps(R);
+  renderTriList(R);
+  renderLots();
+}
+
+/* ---------- import de profils ---------- */
+const UFIELDS=[
+  {k:"n",label:"Nom de l'entreprise",req:true,syn:["nom","name","entreprise","company","raison sociale","nom de l entreprise","nom assuj","denomination","societe","compagnie"]},
+  {k:"neq",label:"NEQ",syn:["neq"]},
+  {k:"v",label:"Ville",syn:["ville","city","municipalite","localite"]},
+  {k:"p",label:"Province",syn:["province","prov"]},
+  {k:"r",label:"Région",syn:["region","region administrative"]},
+  {k:"s",label:"Secteur (texte)",syn:["sous secteur","secteur","industrie","industry","activite","activites","produits","description","scian","naics","cae"]},
+  {k:"vt",label:"Verticale",syn:["verticale","vertical"]},
+  {k:"f",label:"Fondation (année ou date)",syn:["fondation","annee de fondation","fondee","founded","date de constitution","dat consti","dat immat","constitution","annee fondation"]},
+  {k:"e",label:"Employés",syn:["employes","effectif","nb employes","nombre d employes","employees","cod intval emplo que"]},
+  {k:"ca",label:"CA (M$ ou $)",syn:["ca","ca estime","chiffre d affaires","revenus","revenue","ventes"]},
+  {k:"eb",label:"BAIIA (M$ ou $)",syn:["baiia","ebitda"]},
+  {k:"px",label:"Prix demandé",syn:["prix","prix demande","asking price"]},
+  {k:"ad",label:"Âge du fondateur",syn:["age du fondateur","age fondateur","age du dirigeant","age dirigeant","founder age","age du proprietaire","age"]},
+  {k:"site",label:"Site web",syn:["site","site web","website","url","site source principale"]},
+  {k:"x",label:"Non disponible (motif)",syn:["exclusion","non disponible","motif exclusion"]},
+];
+let UPARSE=null;
+function umsg(t,kind){const m=$("#univMsg");m.textContent=t;m.className="msg "+(kind||"");}
+function parseDelimited(text){
+  const t=text.replace(/^﻿/,"");
+  const first=t.split(/\r?\n/).find(l=>l.trim())||"";
+  const delim=first.includes("\t")?"\t":(first.split(";").length>first.split(",").length?";":",");
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){cell+='"';i++;}else q=false;}else cell+=c;}
+    else if(c==='"'&&cell==="")q=true;
+    else if(c===delim){row.push(cell);cell="";}
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell="";}
+    else cell+=c;
+  }
+  row.push(cell);rows.push(row);
+  return rows;
+}
+function tableFromRows(rows){
+  rows=rows.filter(r=>r.some(c=>String(c==null?"":c).trim()));
+  let hi=0,best=-1;
+  rows.slice(0,15).forEach((r,i)=>{const n=r.filter(c=>String(c==null?"":c).trim()).length;if(n>best){best=n;hi=i;}});
+  const headers=rows[hi].map(h=>String(h==null?"":h).trim());
+  return {headers,rows:rows.slice(hi+1).map(r=>headers.map((_,j)=>r[j]==null?"":String(r[j])))};
+}
+function parseAny(text){
+  const t=text.trim();
+  if(t.startsWith("[")||t.startsWith("{")){
+    const arr=firstArray(JSON.parse(t)).filter(o=>o&&typeof o==="object");
+    const headers=[...new Set(arr.flatMap(o=>Object.keys(o)))];
+    return {headers,rows:arr.map(o=>headers.map(h=>o[h]==null?"":String(o[h])))};
+  }
+  return tableFromRows(parseDelimited(t));
+}
+function loadXLSX(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX)return res(window.XLSX);
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload=()=>res(window.XLSX);s.onerror=()=>rej(new Error("xlsx"));
+    document.head.appendChild(s);
+  });
+}
+function autoMap(headers){
+  const H=headers.map(h=>low(h).replace(/[^a-z0-9]+/g," ").trim());
+  const used=new Set(),map={};
+  UFIELDS.forEach(f=>{
+    let hit=-1;
+    for(const syn of f.syn){const i=H.findIndex((h,i)=>!used.has(i)&&h===syn);if(i>=0){hit=i;break;}}
+    if(hit<0)for(const syn of f.syn){if(syn.length<4)continue;const i=H.findIndex((h,i)=>!used.has(i)&&h.includes(syn));if(i>=0){hit=i;break;}}
+    if(hit>=0){used.add(hit);map[f.k]=hit;}
+  });
+  return map;
+}
+function yearOf(v){const m=String(v==null?"":v).match(/\b(1[89]\d\d|20\d\d)\b/);return m?+m[1]:null;}
+function provOf(v){const s=low(v);if(!s)return "";if(/^qc$|quebec/.test(s))return "QC";if(/^on$|ontario/.test(s))return "ON";return "Autre";}
+function moneyM(v){
+  const s=str(v);if(!s)return "";
+  if(/^[\d\s.,$]+$/.test(s)){const n=num(s.replace(/\s/g,"").replace(/,(?=\d{3}\b)/g,""));if(n!=null&&n>10000)return String(Math.round(n/1e5)/10);}
+  return s.replace(/\s*M\$?/gi,"").replace(/\$/g,"").replace(/–/g,"-").trim();
+}
+function toProfile(get,lot){
+  const n=str(get("n"));if(!n)return null;
+  const o={n,src:lot};
+  const put=(k,v)=>{if(v!=null&&v!=="")o[k]=v;};
+  put("neq",str(get("neq")));put("v",str(get("v")));put("p",provOf(get("p")));put("r",str(get("r")));
+  put("s",str(get("s")).slice(0,140));
+  put("vt",pick(VERTICALES,get("vt"))||guessVert(str(get("vt"))+" "+str(get("s")))||"À classer");
+  put("f",yearOf(get("f")));put("e",str(get("e")));put("ca",moneyM(get("ca")));put("eb",moneyM(get("eb")));
+  put("x",str(get("x")).slice(0,60));
+  const px=moneyM(get("px"));put("px",px===""?null:num(px));put("ad",num(get("ad")));put("site",str(get("site")).slice(0,120));
+  return o;
+}
+function showMapping(){
+  const box=$("#univMap");
+  if(!UPARSE||!UPARSE.rows.length){box.hidden=true;umsg("Aucune ligne de données trouvée.","err");return;}
+  const map=autoMap(UPARSE.headers);
+  box.hidden=false;
+  const opts=sel=>`<option value="">— ignorer —</option>`+UPARSE.headers.map((h,i)=>`<option value="${i}"${sel===i?" selected":""}>${esc(h||"Colonne "+(i+1))}</option>`).join("");
+  box.innerHTML=`<div class="prev"><div class="bar"><span><b style="color:var(--rock-ink)">${fmt(UPARSE.rows.length)} lignes</b> lues. Vérifie quelle colonne correspond à quoi.</span><button class="btn sm amber" id="univGo">Importer ${fmt(UPARSE.rows.length)} profils</button></div>
+  <div class="mapgrid">${UFIELDS.map(f=>`<label class="${f.req?"req":""}" for="um-${f.k}">${esc(f.label)}${f.req?" (obligatoire)":""}<select id="um-${f.k}" data-um="${f.k}">${opts(map[f.k])}</select></label>`).join("")}</div>
+  <div class="hint" id="univPrev" style="margin-top:10px"></div></div>`;
+  const prev=()=>{const m=readMap();const ps=UPARSE.rows.slice(0,3).map(r=>toProfile(k=>m[k]==null?"":r[m[k]],"aperçu")).filter(Boolean);$("#univPrev").innerHTML="Aperçu : "+(ps.length?ps.map(p=>`<b style="color:var(--rock-ink)">${esc(p.n)}</b> (${[p.vt,p.v,p.p,p.f&&"fondée "+p.f,p.e&&p.e+" employés",p.ca&&"CA "+p.ca].filter(Boolean).map(esc).join(", ")})`).join(" · "):"aucun nom lu, choisis la colonne du nom.");};
+  $$("[data-um]",box).forEach(s=>s.addEventListener("change",prev));prev();
+  $("#univGo").onclick=importUniv;
+}
+function readMap(){const m={};$$("[data-um]").forEach(s=>{if(s.value!=="")m[s.dataset.um]=+s.value;});return m;}
+async function importUniv(){
+  if(!db){umsg("Base indisponible.","err");return;}
+  const m=readMap();if(m.n==null){umsg("Choisis la colonne du nom de l'entreprise.","err");return;}
+  const label=str($("#univSrc").value)||("Lot du "+today());
+  const profs=UPARSE.rows.map(r=>toProfile(k=>m[k]==null?"":r[m[k]],label)).filter(Boolean);
+  if(!profs.length){umsg("Aucun profil avec un nom.","err");return;}
+  const batch="b"+Date.now().toString(36);
+  const chunks=[];let cur=[],size=0;
+  profs.forEach(p=>{const s=JSON.stringify(p).length+1;if(size+s>180000&&cur.length){chunks.push(cur);cur=[];size=0;}cur.push(p);size+=s;});
+  if(cur.length)chunks.push(cur);
+  $("#univGo").disabled=true;
+  for(let i=0;i<chunks.length;i++){
+    umsg(`Import en cours : partie ${i+1} sur ${chunks.length}…`);
+    try{await db.collection("univers").doc(batch+"-"+i).set({batch,label,date:today(),part:i,parts:chunks.length,count:profs.length,rows:chunks[i]});}
+    catch(e){writeErr(e);umsg("Import interrompu à la partie "+(i+1)+".","err");return;}
+  }
+  umsg(fmt(profs.length)+" profils importés dans le lot « "+label+" ».","ok");
+  UPARSE=null;$("#univMap").hidden=true;$("#univText").value="";$("#univSrc").value="";
+}
+$("#btnUniv").addEventListener("click",()=>{const b=$("#univBox");b.hidden=!b.hidden;if(!b.hidden)$("#univText").focus();});
+$("#univRead").addEventListener("click",()=>{
+  const t=$("#univText").value;if(!t.trim()){umsg("Colle d'abord un tableau.","err");return;}
+  try{UPARSE=parseAny(t);umsg("");showMapping();}catch(e){umsg("Tableau illisible : vérifie le format (Excel copié, CSV ou JSON).","err");}
+});
+$("#univFileBtn").addEventListener("click",()=>$("#univFile").click());
+$("#univFile").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value="";
+  if(!$("#univSrc").value)$("#univSrc").value=f.name.replace(/\.[^.]+$/,"");
+  try{
+    if(/\.xlsx?$/i.test(f.name)){
+      umsg("Lecture du fichier Excel…");
+      const X=await loadXLSX();
+      const wb=X.read(await f.arrayBuffer(),{type:"array",cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      UPARSE=tableFromRows(X.utils.sheet_to_json(ws,{header:1,defval:"",raw:false,dateNF:"yyyy-mm-dd"}));
+    }else UPARSE=parseAny(await f.text());
+    umsg(f.name+" lu.","ok");showMapping();
+  }catch(err){umsg("Impossible de lire "+f.name+".","err");}
+});
+
+/* ---------- rendu global ---------- */
+function renderStats(){
+  const c=st=>inStage(st).length;
+  const radarKeep=inStage("radar").filter(it=>D(it).group==="keep").length;
+  const R=UROWS.length?runTri():null;
+  const short=R?R.cols[R.cols.length-1]:null;
+  const tiles=[
+    {n:"Univers",v:fmt(UROWS.length),s:R?fmt(short.ok+short.unk)+" en shortlist après le tri":"profils importés"},
+    {n:"Radar",v:c("radar"),s:radarKeep+" retenue"+(radarKeep>1?"s":"")+" par les filtres"},
+    {n:"Backlog",v:c("backlog"),s:"à contacter"},
+    {n:"Envois",v:c("envoye"),t:50},
+    {n:"2e appel",v:c("secondcall"),t:20},
+    {n:"Démarche",v:c("pursuit"),t:10},
+    {n:"Acquisition",v:c("acquisition"),t:2},
+  ];
+  $("#stats").innerHTML=tiles.map(t=>`<div class="stat"><div class="l">${t.n}</div><div class="v">${t.v}${t.t?`<small> / ${t.t}</small>`:""}</div>${t.t?`<div class="bar"><i style="width:${Math.min(100,Math.round(t.v/t.t*100))}%"></i></div>`:`<div class="s">${t.s}</div>`}</div>`).join("");
+  $("#n-radar").textContent=c("radar");$("#n-backlog").textContent=c("backlog");$("#n-envois").textContent=c("envoye");
+  $("#n-suivi").textContent=all().filter(it=>SUIVI.some(s=>s.id===it.stage)).length;
+}
+function renderFilters(){
+  $("#fVert").innerHTML=VERTICALES.map(v=>`<button type="button" class="fchip${F.vert.has(v)?" on":""}" data-fvert="${esc(v)}" aria-pressed="${F.vert.has(v)}">${esc(v)}</button>`).join("");
+  $("#fGrp").innerHTML=GROUPS.map(g=>`<button type="button" class="fchip${F.grp.has(g.id)?" on":""}" data-fgrp="${g.id}" aria-pressed="${F.grp.has(g.id)}"><span class="dot" style="background:${g.c}"></span>${g.n}</button>`).join("");
+  $("#fCanal").innerHTML=`<option value="">Tous canaux</option><option value="tier:A">Tier A · déjà en processus</option><option value="tier:B">Tier B · processus avorté</option><option value="tier:C">Tier C · hors marché</option>`+CANAL_NAMES.map(c=>`<option>${esc(c)}</option>`).join("");
+  $("#fCanal").value=F.canal;$("#fProv").value=F.prov;$("#fDays").value=String(F.days);$("#fScore").value=F.score;$("#fScoreV").textContent=F.score;$("#fq").value=F.q;
+}
+function renderAll(){
+  DER=new Map();
+  const ae=document.activeElement;
+  const keep=ae&&ae.classList&&ae.classList.contains("cell")?{id:ae.dataset.id,k:ae.dataset.k,sheet:ae.closest("[id^=sheet-]")?.id}:null;
+  renderStats();
+  const shown=all().filter(passF).length;
+  $("#fCount").textContent=shown+" / "+items.size+" cibles";
+  const r=inStage("radar").filter(passF),b=inStage("backlog").filter(passF);
+  renderSheet("radar",r,items.size?"Aucune cible du Radar ne correspond aux filtres.":"Le Radar est vide. Colle des annonces avec le bouton « + Coller des annonces ».");
+  renderSheet("backlog",b,items.size?"Aucune cible du Backlog ne correspond aux filtres.":"Backlog vide.");
+  const env=inStage("envoye").filter(passF).sort((a,b)=>(a.followup||"9999").localeCompare(b.followup||"9999"));
+  $("#grid-envois").innerHTML=env.length?env.map(it=>ticketHTML(it,"envoi")).join(""):`<div class="empty" style="grid-column:1/-1;border-radius:10px">Aucun envoi en cours.</div>`;
+  $("#board").innerHTML=SUIVI.map(s=>{
+    const l=inStage(s.id).filter(passF);
+    return `<div class="col" data-col="${s.id}"><div class="col-h"><span>${s.n}</span><b>${l.length}${s.target?" / "+s.target:""}</b></div>${l.length?l.map(it=>ticketHTML(it,"suivi")).join(""):`<div class="none">Glisse un ticket ici</div>`}</div>`;
+  }).join("");
+  if(TAB==="entonnoir")renderFunnel();
+  const target=pendingFocus||keep;
+  if(target){
+    const scope=target.sheet?document.getElementById(target.sheet):document;
+    const el=scope&&scope.querySelector(`.cell[data-id="${CSS.escape(target.id)}"][data-k="${target.k}"]`);
+    if(el){el.focus({preventScroll:!pendingFocus});if(pendingFocus)el.select&&el.select();}
+    pendingFocus=null;
+  }
+}
+function isDirty(){
+  const ae=document.activeElement;
+  if(ae&&ae.closest&&ae.closest("#steps")&&ae.tagName==="INPUT"&&ae.type!=="checkbox")return true;
+  if(!ae||!ae.classList||!ae.classList.contains("cell")||ae.tagName==="SELECT")return false;
+  const it=items.get(ae.dataset.id);if(!it)return false;
+  const v=it[ae.dataset.k];
+  return String(ae.value)!==(v==null?"":String(v));
+}
+function renderSoon(){
+  if(isDirty()){pendingRender=true;return;}
+  pendingRender=false;renderAll();
+}
+document.addEventListener("focusout",()=>setTimeout(()=>{if(pendingRender&&!isDirty()){pendingRender=false;renderAll();}},0));
+
+/* ---------- événements du classeur ---------- */
+function setField(id,k,raw,fromSelect){
+  const it=items.get(id);if(!it)return;
+  const col=COLS[k];
+  let v=raw;
+  if(col&&(col.kind==="num"||col.num)){v=String(raw).trim()===""?null:num(raw);}
+  else v=String(raw).trim();
+  if((it[k]==null?"":it[k])===(v==null?"":v))return;
+  const next={...it,[k]:v};
+  if(k==="canal"&&v&&!(it.sources||[]).includes(v))next.sources=[...(it.sources||[]),v];
+  writeItem(next);
+  if(fromSelect)renderSoon();else pendingRender=true;
+}
+async function moveTo(ids,stage){
+  const list=ids.map(id=>items.get(id)).filter(Boolean).map(it=>{
+    const n={...it,stage};
+    if(stage==="envoye"){n.sendDate=n.sendDate||today();n.channel=n.channel||"Appel";n.sendStatus="Envoyé";}
+    if(stage==="secondcall")n.sendStatus="Répondu";
+    return n;
+  });
+  await writeMany(list);
+  renderSoon();
+}
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.classList.contains("cell")&&t.dataset.id){setField(t.dataset.id,t.dataset.k,t.value,t.tagName==="SELECT");return;}
+  if(t.classList.contains("rowsel")){const key=t.closest("[id^=sheet-]").id.slice(6);const s=SHEETS[key].sel;t.checked?s.add(t.dataset.id):s.delete(t.dataset.id);renderBulk(key);const all=$(`[data-selall="${key}"]`);if(all)all.checked=false;return;}
+  if(t.dataset.selall){const key=t.dataset.selall;const s=SHEETS[key].sel;$$(`#sheet-${key} .rowsel`).forEach(cb=>{cb.checked=t.checked;t.checked?s.add(cb.dataset.id):s.delete(cb.dataset.id);});renderBulk(key);}
+});
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(t.classList&&t.classList.contains("cell")&&t.tagName==="INPUT"&&e.key==="Enter"){
+    e.preventDefault();
+    const td=t.closest("td"),tr=td.parentElement,ci=[...tr.children].indexOf(td);
+    const nx=tr.nextElementSibling&&tr.nextElementSibling.children[ci];
+    const f=nx&&nx.querySelector(".cell");t.blur();if(f)f.focus();
+  }
+  if(t.classList&&t.classList.contains("ticket")&&(e.key==="Enter")){openTicket(t.dataset.open);}
+  if(e.key==="Escape")$$(".overlay").forEach(o=>{if(!o.hidden&&o.id!=="ovLogin")closeOverlay(o);});
+});
+document.addEventListener("scroll",e=>{const t=e.target;if(t.classList&&t.classList.contains("sheet-scroll"))updateFades(t);},true);
+let armTimer=null;
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,[data-open],th[data-sort],.fchip");if(!t)return;
+  if(t.dataset.ptog){
+    const it=items.get(t.dataset.ptog),k=t.dataset.k;if(!it||!PROV_KEYS.includes(k))return;
+    const nextP=pvOf(it,k)==="verifie"?"estime":"verifie";
+    writeItem({...it,prov:{...(it.prov||{}),[k]:nextP}});renderSoon();
+    toast(PROV_LAB[k]+" : marqué "+(nextP==="verifie"?"vérifié":"estimé")+".");
+    return;
+  }
+  if(t.dataset.sort){const st=SHEETS[t.dataset.sheet];if(st.sort===t.dataset.sort)st.dir*=-1;else{st.sort=t.dataset.sort;st.dir=(COLS[t.dataset.sort].kind==="calc"||["ca","baiia","fondation","prix"].includes(t.dataset.sort))?-1:1;}saveUi();renderAll();return;}
+  if(t.dataset.preset){SHEETS[t.dataset.sheet].preset=t.dataset.preset;saveUi();renderAll();return;}
+  if(t.dataset.move){e.stopPropagation();const st=t.dataset.move;moveTo([t.dataset.id],st).then(()=>{if(st==="envoye")openTicket(t.dataset.id);});toast(STAGE_N[st]==="Backlog"?"Cible déplacée au Backlog.":"Cible déplacée : "+STAGE_N[st]+".");return;}
+  if(t.dataset.addrow){const it=normalize({name:"",stage:t.dataset.addrow,canal:""},t.dataset.addrow);pendingFocus={id:it.id,k:"name",sheet:"sheet-"+t.dataset.addrow};writeItem(it);renderAll();return;}
+  if(t.dataset.bulk){
+    const key=t.closest(".bulk").dataset.sheet,ids=[...SHEETS[key].sel],act=t.dataset.bulk;
+    if(act==="clear"){SHEETS[key].sel.clear();renderAll();return;}
+    if(act==="delete"){
+      if(!t.classList.contains("armed")){t.classList.add("armed");t.textContent="Confirmer : supprimer "+ids.length;clearTimeout(armTimer);armTimer=setTimeout(()=>{t.classList.remove("armed");t.textContent="Supprimer";},4000);return;}
+      Promise.all(ids.map(deleteItem)).then(()=>toast(ids.length+" cible(s) supprimée(s)."));SHEETS[key].sel.clear();renderAll();return;
+    }
+    SHEETS[key].sel.clear();moveTo(ids,act).then(()=>toast(ids.length+" cible(s) déplacée(s) : "+STAGE_N[act]+"."));return;
+  }
+  if(t.dataset.fvert!=null){F.vert.has(t.dataset.fvert)?F.vert.delete(t.dataset.fvert):F.vert.add(t.dataset.fvert);FOCUS=null;afterFilter();return;}
+  if(t.dataset.fgrp!=null){F.grp.has(t.dataset.fgrp)?F.grp.delete(t.dataset.fgrp):F.grp.add(t.dataset.fgrp);FOCUS=null;afterFilter();return;}
+  if(t.dataset.open!=null){openTicket(t.dataset.open);return;}
+});
+function afterFilter(){saveUi();renderFilters();renderAll();}
+$("#fq").addEventListener("input",e=>{F.q=e.target.value;FOCUS=null;saveUi();renderAll();});
+$("#fCanal").addEventListener("change",e=>{F.canal=e.target.value;FOCUS=null;afterFilter();});
+$("#fProv").addEventListener("change",e=>{F.prov=e.target.value;FOCUS=null;afterFilter();});
+$("#fDays").addEventListener("change",e=>{F.days=+e.target.value;FOCUS=null;afterFilter();});
+$("#fScore").addEventListener("input",e=>{F.score=+e.target.value;$("#fScoreV").textContent=F.score;FOCUS=null;saveUi();renderAll();});
+$("#fReset").addEventListener("click",()=>{F.q="";F.vert.clear();F.grp.clear();F.canal="";F.prov="";F.days=0;F.score=0;FOCUS=null;afterFilter();});
+
+/* drag & drop du suivi */
+document.addEventListener("dragstart",e=>{const t=e.target.closest&&e.target.closest("[data-drag]");if(!t)return;e.dataTransfer.setData("text/plain",t.dataset.drag);t.classList.add("drag");});
+document.addEventListener("dragend",e=>{const t=e.target.closest&&e.target.closest("[data-drag]");if(t)t.classList.remove("drag");});
+document.addEventListener("dragover",e=>{const c=e.target.closest&&e.target.closest(".col");if(!c)return;e.preventDefault();c.classList.add("over");});
+document.addEventListener("dragleave",e=>{const c=e.target.closest&&e.target.closest(".col");if(c&&!c.contains(e.relatedTarget))c.classList.remove("over");});
+document.addEventListener("drop",e=>{const c=e.target.closest&&e.target.closest(".col");if(!c)return;e.preventDefault();c.classList.remove("over");const id=e.dataTransfer.getData("text/plain");if(id&&items.get(id)&&items.get(id).stage!==c.dataset.col)moveTo([id],c.dataset.col);});
+
+/* ---------- onglets ---------- */
+const TABS=["radar","backlog","envois","suivi","entonnoir"];
+function setTab(t,push){
+  if(!TABS.includes(t))t="backlog";
+  TAB=t;
+  $$(".tab").forEach(x=>{x.classList.toggle("on",x.dataset.tab===t);x.setAttribute("aria-selected",x.dataset.tab===t);});
+  $$(".panel").forEach(p=>p.classList.toggle("on",p.id==="panel-"+t));
+  $(".filters").hidden=t==="entonnoir";
+  if(push&&location.hash!=="#"+t){try{history.replaceState(null,"","#"+t);}catch(e){location.hash=t;}}
+  saveUi();
+  if(t==="entonnoir")renderFunnel();
+  $$(".sheet-scroll").forEach(updateFades);
+}
+$$(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab,true)));
+window.addEventListener("hashchange",()=>setTab(location.hash.slice(1),false));
+let rsz=null;window.addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(TAB==="entonnoir")renderFunnel();$$(".sheet-scroll").forEach(updateFades);},150);});
+
+/* ---------- fiche (modal foncé) ---------- */
+const T_FIELDS=["priorite","role","ageFond","name","suffix","stage","ref","neq","site","verticale","soussecteur","canal","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","transaction","raison","mix","recurrence","fit","exclusion","bridge","owner","flags","contactName","contactEmail","sendDate","channel","sendStatus","followup","slide","badgeOrigine","dateAdded","notes","raw"];
+function fillSelect(id,opts,blank){$("#"+id).innerHTML=(blank?`<option value="">—</option>`:"")+opts.map(o=>typeof o==="string"?`<option value="${esc(o)}">${esc(o)}</option>`:`<option value="${esc(o.v)}">${esc(o.n)}</option>`).join("");}
+fillSelect("t-stage",STAGES.map(s=>({v:s.id,n:s.n})));
+fillSelect("t-verticale",VERTICALES);fillSelect("t-canal",CANAL_NAMES,true);fillSelect("t-province",PROVINCES,true);
+fillSelect("t-confTaille",CONF,true);fillSelect("t-transaction",TRANSACTIONS,true);fillSelect("t-raison",RAISONS,true);
+fillSelect("t-priorite",PRIORITES,true);fillSelect("t-role",ROLES,true);fillSelect("t-mix",MIX,true);fillSelect("t-recurrence",RECUR,true);fillSelect("t-fit",FITS);fillSelect("t-exclusion",EXCLUSIONS,true);
+let editing=null;
+function openTicket(id){
+  const it=items.get(id);if(!it)return;
+  editing=id;
+  T_FIELDS.forEach(k=>{
+    const el=$("#t-"+k);if(!el)return;
+    let v=it[k];
+    if(k==="flags")v=(it.flags||[]).join("\n");
+    if(el.tagName==="SELECT"&&v&&![...el.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o);}
+    el.value=v==null?"":v;
+  });
+  const d=D(it);
+  $("#t-bench").innerHTML=`<option value="">${esc("Par défaut : "+(BENCH.find(b=>b.id===(VERT_BENCH[it.verticale]||"mfg-general"))||{label:"—"}).label)}</option>`+BENCH.map(b=>`<option value="${esc(b.id)}">${esc(b.label)} · SCIAN ${esc(b.naics)}</option>`).join("");
+  $("#t-bench").value=it.bench&&BENCH.some(b=>b.id===it.bench)?it.bench:"";
+  $("#tProv").innerHTML=PROV_KEYS.map(k=>{
+    const p=(it.prov&&it.prov[k])||"",s=(it.src&&it.src[k])||"",has=it[k]!=null&&it[k]!=="";
+    return `<div class="pvrow"><label for="tp-${k}">${esc(PROV_LAB[k])}</label><select id="tp-${k}"><option value="">${has?"Estimé (par défaut)":"—"}</option><option value="verifie"${p==="verifie"?" selected":""}>Vérifié</option><option value="estime"${p==="estime"?" selected":""}>Estimé</option></select><input id="ts-${k}" value="${esc(s)}" placeholder="Source : site, registre, communiqué, appel, NDA…" aria-label="Source : ${esc(PROV_LAB[k])}"></div>`;
+  }).join("");
+  const sz=d.sz,b=sz.b;
+  const line=(lab,s,k)=>`<div>${lab} : ${s?pvHTML(s,"")+` <span class="why">${esc(sizeTitle(it,sz,k))}</span>`:"— <span class=\"why\">il faut un nombre d'employés ou un CA</span>"}</div>`;
+  $("#tEst").innerHTML=`<div><b>Industrie de référence :</b> ${b?esc(b.label)+" · SCIAN "+esc(b.naics):"—"}</div>`+line("CA",sz.ca,"ca")+line("BAIIA",sz.eb,"eb")+line("Valeur d'entreprise",sz.ve,"ve");
+  $("#tTitle").textContent=it.name||"Sans nom";
+  $("#tDerived").innerHTML=`Score <b>${d.score}</b> · ${esc(scoreTitle(d))}<br>Verdict <b>${esc(d.verdict)}</b>${d.tier?" · Tier "+d.tier:""}${d.age!=null?" · "+d.age+" ans d'existence":""}`;
+  $("#tSources").textContent=(it.sources&&it.sources.length?"Vue dans : "+it.sources.join(", ")+". ":"")+(it.source?"Source d'origine : "+it.source+".":"");
+  const del=$("#tDelete");del.classList.remove("armed");del.textContent="Supprimer";
+  openOverlay($("#ovTicket"));
+}
+$("#tForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const it=items.get(editing);if(!it)return;
+  const n={...it};
+  T_FIELDS.forEach(k=>{
+    const el=$("#t-"+k);if(!el)return;
+    let v=el.value;
+    if(k==="flags")v=v.split("\n").map(str).filter(Boolean);
+    else if(k==="fondation"||k==="prix"||k==="ageFond")v=num(v);
+    else v=str(v);
+    n[k]=v;
+  });
+  if(!n.name){$("#t-name").focus();return;}
+  n.bench=$("#t-bench").value||"";
+  const prov={},src={};
+  PROV_KEYS.forEach(k=>{const p=$("#tp-"+k).value;if(p==="verifie"||p==="estime")prov[k]=p;const s=str($("#ts-"+k).value);if(s)src[k]=s.slice(0,300);});
+  n.prov=prov;n.src=src;
+  if(n.canal&&!(n.sources||[]).includes(n.canal))n.sources=[...(n.sources||[]),n.canal];
+  writeItem(n);closeOverlay($("#ovTicket"));renderSoon();toast("Fiche enregistrée.");
+});
+$("#tDelete").addEventListener("click",e=>{
+  const b=e.currentTarget;
+  if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="Confirmer la suppression";return;}
+  deleteItem(editing);closeOverlay($("#ovTicket"));renderSoon();toast("Cible supprimée.");
+});
+let lastFocus=null;
+function openOverlay(o){lastFocus=document.activeElement;o.hidden=false;const f=o.querySelector("input,select,textarea,button");f&&f.focus();}
+function closeOverlay(o){o.hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
+$$(".overlay").forEach(o=>{if(o.id==="ovLogin")return;o.addEventListener("click",e=>{if(e.target===o||e.target.closest("[data-close]"))closeOverlay(o);});});
+
+/* ---------- thèse ---------- */
+const TH=["caMin","caMax","ebMin","ebMax","addonCaMin","addonEbMin","multMax"];
+function fillThese(c){
+  TH.forEach(k=>$("#th-"+k).value=String(c[k]).replace(".",","));
+  $("#thProv").innerHTML=PROVINCES.map(p=>`<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" value="${p}" style="width:auto"${c.provinces.includes(p)?" checked":""}> ${p==="Autre"?"Autres provinces":p}</label>`).join("");
+}
+$("#btnThese").addEventListener("click",()=>{fillThese(CFG);openOverlay($("#ovThese"));});
+$("#thDefault").addEventListener("click",()=>fillThese(DEFAULT_CFG));
+$("#thForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const c={};
+  for(const k of TH){const v=num($("#th-"+k).value);if(v==null){$("#th-"+k).focus();toast("Seuil invalide : "+k,"err");return;}c[k]=v;}
+  c.provinces=$$("#thProv input:checked").map(x=>x.value);
+  if(!db){toast("Base indisponible : seuils non enregistrés.","err");return;}
+  try{await db.doc("config/these").set(c);CFG={...DEFAULT_CFG,...c};closeOverlay($("#ovThese"));DER=new Map();renderAll();toast("Seuils enregistrés. Verdicts recalculés.");}
+  catch(err){writeErr(err);}
+});
+
+/* ---------- hypothèses par industrie ---------- */
+let BENCH_FORM=[];
+function fillBench(list,disp){
+  BENCH_FORM=list.map(b=>({...b,m:[...b.m],x:[...b.x]}));
+  $("#bMeth").innerHTML=`<b>Chaîne d'estimation.</b> Employés × revenu par employé de l'industrie (± la dispersion) = CA estimé. Si le pipeline donne aussi un CA, les deux sont moyennés et la fourchette couvre les deux. CA × marge BAIIA centrale = BAIIA estimé. BAIIA × multiple central = valeur d'entreprise estimée. Un chiffre marqué vérifié remplace toujours l'estimation. <b>Limites.</b> Les moyennes de Statistique Canada incluent les grandes usines : une PME de 20 à 200 employés peut se situer plus bas. ${esc(BENCH_MULT_SRC)}`;
+  $("#b-disp").value=dec(Math.round(disp*100));
+  const cnt=id=>all().filter(it=>benchOf(it)&&benchOf(it).id===id).length;
+  const trio=(i,f,a)=>`<div class="trio">${[0,1,2].map(j=>`<input data-b="${i}" data-f="${f}${j}" value="${dec(a[j])}" inputmode="decimal" aria-label="${f==="m"?"Marge":"Multiple"} ${["basse","centrale","haute"][j]}">`).join("")}</div>`;
+  $("#bTab").innerHTML=`<thead><tr><th>Industrie</th><th>Rev./employé QC (k$)</th><th>Rev./employé ON (k$)</th><th>Marge BAIIA % · bas, centre, haut</th><th>Multiple VE/BAIIA · bas, centre, haut</th><th style="text-align:right">Cibles</th></tr></thead><tbody>`+list.map((b,i)=>`<tr><td class="lab"><b>${esc(b.label)}</b><span>${esc(b.v||"Tous")} · SCIAN ${esc(b.naics)}</span></td><td><input data-b="${i}" data-f="qc" value="${dec(b.qc)}" inputmode="decimal" aria-label="Revenu par employé Québec : ${esc(b.label)}"></td><td><input data-b="${i}" data-f="on" value="${dec(b.on)}" inputmode="decimal" aria-label="Revenu par employé Ontario : ${esc(b.label)}"></td><td>${trio(i,"m",b.m)}</td><td>${trio(i,"x",b.x)}</td><td class="cnt">${cnt(b.id)}</td></tr><tr class="srcrow"><td colspan="6"><textarea data-b="${i}" data-f="src" aria-label="Source : ${esc(b.label)}">${esc(b.src)}</textarea></td></tr>`).join("")+`</tbody>`;
+  $("#bCal").innerHTML=`<li style="list-style:none;margin-left:-18px;color:var(--amber-rock);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">Points de calibration</li>`+BENCH_CALIB.map(c=>`<li>${esc(c)}</li>`).join("");
+  $("#bSrc").innerHTML=`Sources : <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1610011701" target="_blank" rel="noopener">StatCan 16-10-0117-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1410020201" target="_blank" rel="noopener">StatCan 14-10-0202-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=3310050001" target="_blank" rel="noopener">StatCan 33-10-0500-01</a> · <a href="https://cms.cibcusmmib.com/wp-content/uploads/2026/04/US-Middle-Market-Monitor_Q1-2026.pdf" target="_blank" rel="noopener">CIBC / GF Data, T1 2026</a> · <a href="https://middlemarketgrowth.org/fall-2025-gf-data-small-deals-h1/" target="_blank" rel="noopener">GF Data, petites transactions S1 2025</a> · <a href="https://www.capstonepartners.com/insights/article-hvac-equipment-sector-ma-update/" target="_blank" rel="noopener">Capstone, CVAC 2026</a> · <a href="https://www.mccarthy.ca/en/experience/spx-technologies-inc-acquires-neptronic-inc-for-c-605m" target="_blank" rel="noopener">SPX / Neptronic</a>`;
+}
+$("#btnBench").addEventListener("click",()=>{fillBench(BENCH,BENCH_DISP);openOverlay($("#ovBench"));});
+$("#bDefault").addEventListener("click",()=>fillBench(DEFAULT_BENCH,DEFAULT_DISP));
+$("#bForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const base=BENCH_FORM.map(b=>({...b,m:[...b.m],x:[...b.x]}));
+  let bad=null;
+  $$("#bTab [data-b]").forEach(el=>{
+    const b=base[+el.dataset.b],f=el.dataset.f;if(!b)return;
+    if(f==="src"){b.src=str(el.value).slice(0,600);return;}
+    const v=num(el.value);if(v==null||v<0){bad=bad||el;return;}
+    if(f==="qc"||f==="on")b[f]=v;else b[f[0]][+f[1]]=v;
+  });
+  if(bad){bad.focus();toast("Valeur invalide dans les hypothèses.","err");return;}
+  for(const b of base){if(!(b.m[0]<=b.m[1]&&b.m[1]<=b.m[2])||!(b.x[0]<=b.x[1]&&b.x[1]<=b.x[2])){toast("« "+b.label+" » : bas ≤ centre ≤ haut, s'il te plaît.","err");return;}}
+  const dp=num($("#b-disp").value);
+  if(dp==null||dp<0||dp>=100){$("#b-disp").focus();toast("Dispersion invalide (0 à 99 %).","err");return;}
+  if(!db){toast("Base indisponible : hypothèses non enregistrées.","err");return;}
+  try{
+    await db.doc("config/benchmarks").set({items:base.map(b=>clean(b)),disp:dp/100,updatedAt:new Date().toISOString()});
+    BENCH=mergeBench(base);BENCH_DISP=dp/100;DER=new Map();closeOverlay($("#ovBench"));renderAll();toast("Hypothèses enregistrées. Estimations recalculées.");
+  }catch(err){writeErr(err);}
+});
+
+/* ---------- copier / importer ---------- */
+$("#btnCopy").addEventListener("click",async()=>{
+  const json=JSON.stringify(all(),null,2);
+  try{await navigator.clipboard.writeText(json);toast(items.size+" cibles copiées dans le presse-papiers.");}
+  catch(e){$("#cpText").value=json;openOverlay($("#ovCopy"));$("#cpText").select();}
+});
+$("#btnImport").addEventListener("click",()=>$("#fileImport").click());
+$("#fileImport").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=async()=>{
+    try{const v=JSON.parse(r.result);const list=Array.isArray(v)?v:[v];const n=await importList(list,"radar","Import");toast(n+" cibles importées ou fusionnées.");}
+    catch(err){toast("Fichier illisible : il faut un JSON (un objet ou un tableau d'objets).","err");}
+  };
+  r.readAsText(f);e.target.value="";
+});
+
+/* ---------- ingestion : collage brut → Claude ---------- */
+let ING_MODE="json",PREVIEW=[];
+fillSelect("ingCanal",CANAL_NAMES);
+$("#btnIngest").addEventListener("click",()=>{const b=$("#ingest");b.hidden=!b.hidden;if(!b.hidden)$("#ingText").focus();});
+$("#ingMode").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  ING_MODE=b.dataset.m;$$("#ingMode button").forEach(x=>x.classList.toggle("on",x===b));
+  $("#ingGo").textContent=ING_MODE==="ia"?"Extraire avec Claude":"Lire le JSON";
+  $("#ingDest").value=ING_MODE==="ia"?"radar":"backlog";
+  $("#ingHint").textContent=ING_MODE==="ia"?"Claude ne devine rien : une information absente du texte reste vide et la cible passe en « À valider ». Tu vérifies l'aperçu avant l'ajout.":"Colle un ticket JSON (ou un tableau) produit par /basalt-ticket. Les anciens badges sont convertis en colonnes.";
+});
+function promptFor(text,canal){
+  return `Tu es l'analyste de sourcing de Basalt Capital, un fonds québécois qui acquiert des PME en situation de relève (Québec et Ontario).
+Voici du texte brut collé depuis le canal « ${canal} ». Il peut contenir une ou plusieurs entreprises ou annonces.
+
+Retourne UNIQUEMENT un tableau JSON, un objet par entreprise ou annonce distincte, avec exactement ces clés :
+- "name" : nom de l'entreprise. Si l'annonce est anonyme : "Annonce <numéro> · <secteur>, <région>" (sans numéro s'il n'y en a pas).
+- "ref" : numéro ou code de l'annonce, sinon "".
+- "neq" : NEQ s'il est écrit, sinon "".
+- "site" : site web s'il est écrit, sinon "".
+- "verticale" : une valeur parmi ${JSON.stringify(VERTICALES)}. ÉNER = énergie, eau, bâtiment, CVAC ; AGRO = transformation alimentaire B2B ; SV = santé, dispositifs médicaux, biotech ; Défense = défense, aéronautique ; Services B2B = services techniques spécialisés aux entreprises ; Hors thèse = commerce de détail, restauration, immobilier, services aux particuliers ; À classer si impossible à dire.
+- "soussecteur" : l'activité précise en quelques mots.
+- "ville", "region" (région administrative du Québec si mentionnée), "province" : "QC", "ON", "Autre" ou "".
+- "fondation" : année de fondation (nombre) ou null.
+- "ageFond" : âge du fondateur ou du dirigeant principal (nombre) s'il est écrit, sinon null.
+- "employes" : nombre ou fourchette en texte, ex. "45" ou "50-99", sinon "".
+- "ca" : chiffre d'affaires en MILLIONS de dollars, en texte : "12.5" ou fourchette "10-15". 12 500 000 $ donne "12.5" ; 800 000 $ donne "0.8". Sinon "".
+- "baiia" : BAIIA / EBITDA en millions, même format. Sinon "".
+- "confTaille" : "Élevée" si le texte donne des chiffres précis, "Moyenne" si fourchette ou estimation, "Faible" si tu déduis d'un indice, "" si rien.
+- "prix" : prix demandé en millions (nombre) ou null.
+- "raison" : une valeur parmi ${JSON.stringify(RAISONS)} ou "".
+- "transaction" : une valeur parmi ${JSON.stringify(TRANSACTIONS)} ou "".
+- "mix" : une valeur parmi ${JSON.stringify(MIX)} ou "".
+- "recurrence" : une valeur parmi ${JSON.stringify(RECUR)} ou "" (contrats de service, consommables, pièces).
+- "contactName", "contactEmail" : seulement s'ils sont écrits dans le texte (conseiller, courtier ou dirigeant), sinon "".
+- "owner" : ce que le texte dit de la propriété et de la relève, sinon "".
+- "flags" : tableau des red flags explicites dans le texte (dépendance à un client, B2C, dettes, etc.), sinon [].
+- "notes" : une phrase qui résume l'annonce.
+- "extrait" : le passage exact du texte qui concerne cette entreprise, au plus 1200 caractères.
+
+Règles : n'invente rien. Une information absente du texte reste "" ou null. N'estime jamais le BAIIA à partir du chiffre d'affaires. Aucun texte hors du JSON.
+
+Texte :
+"""
+${text}
+"""`;
+}
+function firstArray(v){
+  if(Array.isArray(v))return v;
+  if(v&&typeof v==="object"){for(const x of Object.values(v))if(Array.isArray(x))return x;return [v];}
+  return [];
+}
+function msg(t,kind){const m=$("#ingMsg");m.textContent=t;m.className="msg "+(kind||"");}
+$("#ingGo").addEventListener("click",async()=>{
+  const text=$("#ingText").value.trim();
+  if(!text){msg("Colle d'abord du texte.","err");return;}
+  const canal=$("#ingCanal").value,dest=$("#ingDest").value;
+  let arr=[];
+  if(ING_MODE==="json"){
+    try{arr=firstArray(JSON.parse(text));}catch(e){msg("JSON invalide : vérifie les accolades et les guillemets.","err");return;}
+  }else{
+    if(text.length>60000){msg("Texte trop long (plus de 60 000 caractères). Colle-le en deux fois.","err");return;}
+    const sample=await getCap("sample");
+    if(!sample){msg("L'appel à Claude n'est pas disponible dans cette vue. Colle le texte dans le chat Claude : il peut écrire les cibles directement dans la base.","err");return;}
+    const btn=$("#ingGo");btn.disabled=true;msg("Claude lit le texte…");
+    try{arr=firstArray(await sample.json(promptFor(text,canal),{modelTier:"default"}));}
+    catch(e){
+      btn.disabled=false;
+      if(e&&e.code==="not_granted"){msg("Tu as refusé l'appel à Claude. Tu peux utiliser le mode JSON ou coller le texte dans le chat Claude.","err");return;}
+      if(e&&e.code==="rate_limited"){msg("Limite d'appels atteinte. Réessaie dans une minute.","err");return;}
+      msg("Claude n'a pas pu lire ce texte ("+((e&&e.message)||"erreur")+").","err");return;
+    }
+    btn.disabled=false;
+  }
+  PREVIEW=arr.filter(x=>x&&(x.name||x.ref)).map(x=>{
+    const it=normalize({...x,name:x.name||("Annonce "+x.ref),canal:x.canal||canal,stage:dest},dest);
+    const dup=findDup(it);
+    return {it,dup,on:true};
+  });
+  if(!PREVIEW.length){msg("Aucune entreprise reconnue dans ce texte.","err");return;}
+  msg(PREVIEW.length+" cible"+(PREVIEW.length>1?"s":"")+" extraite"+(PREVIEW.length>1?"s":"")+". Vérifie l'aperçu puis ajoute.","ok");
+  renderPreview();
+});
+function renderPreview(){
+  const box=$("#ingPrev");
+  if(!PREVIEW.length){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;
+  const n=PREVIEW.filter(p=>p.on).length;
+  box.innerHTML=`<div class="bar"><span>${n} sur ${PREVIEW.length} sélectionnée${n>1?"s":""} · destination <b style="color:var(--rock-ink)">${STAGE_N[$("#ingDest").value]}</b></span><span style="display:flex;gap:8px"><button class="btn sm" id="pvCancel" style="background:var(--rock-2);color:var(--rock-ink);border-color:var(--rock-rule)">Annuler</button><button class="btn sm amber" id="pvAdd"${n?"":" disabled"}>Ajouter ${n} cible${n>1?"s":""}</button></span></div>
+  <div class="prev-grid">${PREVIEW.map((p,i)=>{
+    const it=p.it,d={...D(it)};DER.delete(it.id);
+    return `<div class="pcard${p.on?"":" off"}"><div class="pc-top"><input type="checkbox" data-pv="${i}"${p.on?" checked":""} aria-label="Garder ${esc(it.name)}"><div><div class="pc-name">${esc(it.name)}</div><div class="pc-meta">${[it.verticale,it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div></div></div>
+    <div class="pc-kv"><span>${vchip(d)}</span><span><b>Score</b> ${d.score}</span><span><b>CA</b> ${esc(it.ca||"—")}</span><span><b>BAIIA</b> ${esc(it.baiia||"—")}</span><span><b>Fondée</b> ${it.fondation||"—"}</span><span><b>Raison</b> ${esc(it.raison||"—")}</span></div>
+    ${p.dup?`<div class="dup">Déjà dans la base : ${esc(p.dup.name)} (${esc(STAGE_N[p.dup.stage]||"")}). Les champs vides y seront complétés.</div>`:""}</div>`;
+  }).join("")}</div>`;
+  $("#pvCancel").onclick=()=>{PREVIEW=[];renderPreview();msg("");};
+  $("#pvAdd").onclick=async()=>{
+    const chosen=PREVIEW.filter(p=>p.on);
+    const list=chosen.map(p=>p.dup?mergeInto(items.get(p.dup.id)||p.dup,p.it):p.it);
+    $("#pvAdd").disabled=true;
+    const ok=await writeMany(list,"Ajout");
+    PREVIEW=[];renderPreview();$("#ingText").value="";
+    msg(ok+" cible"+(ok>1?"s":"")+" ajoutée"+(ok>1?"s":"")+" ou fusionnée"+(ok>1?"s":"")+".","ok");
+    renderSoon();
+  };
+  $$("[data-pv]",box).forEach(cb=>cb.addEventListener("change",()=>{PREVIEW[+cb.dataset.pv].on=cb.checked;renderPreview();}));
+}
+$("#ingDest").addEventListener("change",renderPreview);
+
+/* ---------- démarrage ---------- */
+loadUi();
+renderFilters();
+setTab(TABS.includes(location.hash.slice(1))?location.hash.slice(1):TAB,false);
+renderAll();
+initDb();
+</script>
+</body>
+</html>

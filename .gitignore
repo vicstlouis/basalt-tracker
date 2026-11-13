@@ -1,0 +1,4 @@
+# Données confidentielles : ne jamais les mettre dans le dépôt
+supabase-donnees*.sql
+*.json
+*.bak.html
