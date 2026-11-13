@@ -644,9 +644,13 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
         <div class="fg">
           <div class="f"><label for="th-caMin">CA min (M$)</label><input id="th-caMin" inputmode="decimal"></div>
           <div class="f"><label for="th-caMax">CA max (M$)</label><input id="th-caMax" inputmode="decimal"></div>
-          <div class="f"><label for="th-ebMin">BAIIA min (M$)</label><input id="th-ebMin" inputmode="decimal"></div>
+          <div class="f"><label for="th-ebMin">BAIIA min par défaut (M$)</label><input id="th-ebMin" inputmode="decimal"></div>
           <div class="f"><label for="th-ebMax">BAIIA max (M$)</label><input id="th-ebMax" inputmode="decimal"></div>
         </div>
+      </fieldset>
+      <fieldset><legend>Plancher de BAIIA du noyau, par verticale (M$)</legend>
+        <div class="fg" id="thVert"></div>
+        <p class="note">Le BAIIA min par défaut s'applique aux cibles à classer. Le BAIIA estimé est une fourchette large (CA bas × marge basse jusqu'à CA haut × marge haute) : une cible est gardée tant que le haut de sa fourchette atteint le plancher.</p>
       </fieldset>
       <fieldset><legend>Add-on et prix</legend>
         <div class="fg">
@@ -762,7 +766,11 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
 "use strict";
 /* ---------- listes fermées ---------- */
 const VERTICALES=["ÉNER","AGRO","SV","Défense","Services B2B","Hors thèse","À classer"];
-const CANAUX=[{n:"Index Repreneuriat",t:"A"},{n:"Courtier / F&A",t:"A"},{n:"Annonce en ligne",t:"A"},{n:"Processus avorté",t:"B"},{n:"Réseau / référé",t:"C"},{n:"REQ",t:"C"},{n:"ICRIQ",t:"C"},{n:"Recherche publique",t:"C"}];
+/* Libellés affichés : les valeurs enregistrées restent les codes ci-dessus. */
+const VLAB={"ÉNER":"Énergie et bâtiment","AGRO":"Agroalimentaire","SV":"Sciences de la vie","Défense":"Défense et aérospatiale","Services B2B":"Services techniques B2B","Hors thèse":"Hors thèse","À classer":"À classer"};
+const vlab=v=>VLAB[v]||v||"";
+const THESE_VERTS=["ÉNER","AGRO","SV","Défense","Services B2B"];
+const CANAUX=[{n:"Index Repreneuriat",t:"A"},{n:"Courtier / F&A",t:"A"},{n:"Annonce en ligne",t:"A"},{n:"Processus avorté",t:"B"},{n:"Réseau / référé",t:"C"},{n:"REQ",t:"C"},{n:"ICRIQ",t:"C"},{n:"Orbis",t:"C"},{n:"Recherche publique",t:"C"}];
 const CANAL_NAMES=CANAUX.map(c=>c.n);
 const CANAL_TIER=Object.fromEntries(CANAUX.map(c=>[c.n,c.t]));
 const PROVINCES=["QC","ON","Autre"];
@@ -782,8 +790,11 @@ const VERDICTS=[{n:"Passe",g:"keep"},{n:"Add-on",g:"keep"},{n:"À valider",g:"ch
 const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
 const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
 const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
-const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,addonCaMin:5,addonEbMin:0.5,multMax:7,provinces:["QC","ON"]};
+/* Plancher de BAIIA du noyau par verticale (modifiable dans « Thèse et seuils »). */
+const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,ebMinV:{"ÉNER":3,"AGRO":2.5,"SV":2,"Défense":2,"Services B2B":2},addonCaMin:5,addonEbMin:0.5,multMax:7,provinces:["QC","ON"]};
 let CFG={...DEFAULT_CFG};
+function ebFloor(it){const m=CFG.ebMinV||{},v=m[it&&it.verticale];return Number.isFinite(v)?v:CFG.ebMin;}
+function floorsTxt(c){const m=c.ebMinV||{};return THESE_VERTS.map(v=>`${vlab(v)} ${String(Number.isFinite(m[v])?m[v]:c.ebMin).replace(".",",")}`).join(", ");}
 const YEAR=new Date().getFullYear();
 
 /* ---------- hypothèses par industrie (sourcées, modifiables) ----------
@@ -814,9 +825,40 @@ const DEFAULT_BENCH=[
   {id:"ener-prefab",v:"ÉNER",label:"Bâtiments préfabriqués et structures métalliques",naics:"332311 (3323)",qc:370,on:460,m:[7,11,15],x:[4.5,5.5,6.5],src:"R/E : SCIAN 3323, Québec 2024 = 370 k$, Ontario 460 k$. Marge : 9,9 % + écart EAM 3323 (+0,9 pt Canada, +3 pts Québec)."},
   {id:"ind-usinage",v:"Défense",label:"Usinage de précision (aéro, défense)",naics:"332710 (3327)",qc:245,on:275,m:[6,10,15],x:[4.5,5.5,6.5],src:"R/E : SCIAN 3327 (Québec 250 k$, Ontario 284 k$) × 0,97 (ratio 33271 de 2021). Marge : 9,9 % + écart EAM (−0,6 pt Canada); entreprises du groupe métal et machinerie 11,9 %. Multiple : GF Data, manufacturier en petites transactions 5,8x."},
   {id:"ind-vetements",v:"Défense",label:"Vêtements de travail et ÉPI",naics:"3152",qc:160,on:195,m:[4,7,11],x:[4,5,6],src:"R/E : SCIAN 3152, Québec 2024 = 161 k$, Ontario 196 k$. Marge : entreprises canadiennes du groupe vêtements, textile, meubles et autres 7,0 % (2022-24)."},
+  /* Industries ajoutées pour le lot Orbis (2026-11-12) : même méthode R/E; marge du groupe sans écart de sous-industrie, fourchette large. */
+  {id:"agro-animaux",v:"AGRO",label:"Aliments pour animaux",naics:"3111",qc:1189,on:1136,m:[3, 7.5, 12],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3111, Québec 2024 = 1189 k$, Ontario 1136 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Revenu par employé élevé : la moyenne est tirée par les gros transformateurs de matières premières; une PME sera souvent plus bas. Marge : BAIIA des entreprises canadiennes d'aliments et boissons 7,5 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"agro-meunerie",v:"AGRO",label:"Meunerie et oléagineux",naics:"3112",qc:1054,on:2170,m:[3, 7.5, 12],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3112, Québec 2024 = 1054 k$, Ontario 2170 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Revenu par employé élevé : la moyenne est tirée par les gros transformateurs de matières premières; une PME sera souvent plus bas. Marge : BAIIA des entreprises canadiennes d'aliments et boissons 7,5 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"agro-fruits",v:"AGRO",label:"Fruits et légumes, mets spécialisés",naics:"3114",qc:516,on:549,m:[3, 7.5, 12],x:[5, 6, 7],src:"R/E : SCIAN 3114, Québec 2024 = 516 k$, Ontario 549 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes d'aliments et boissons 7,5 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"agro-laitier",v:"AGRO",label:"Produits laitiers",naics:"3115",qc:770,on:671,m:[3, 7.5, 12],x:[5, 6, 7],src:"R/E : SCIAN 3115, Québec 2024 = 770 k$, Ontario 671 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes d'aliments et boissons 7,5 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"bat-bois",v:"ÉNER",label:"Produits du bois, dont bâtiments préfabriqués et maisons mobiles",naics:"3219",qc:309,on:337,m:[5, 9.9, 15],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3219, Québec 2024 = 309 k$, Ontario 337 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"bat-beton",v:"ÉNER",label:"Ciment et produits en béton",naics:"3273",qc:531,on:522,m:[5, 9.9, 16],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3273, Québec 2024 = 531 k$, Ontario 522 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"ener-chaudieres",v:"ÉNER",label:"Chaudières, réservoirs et contenants",naics:"3324",qc:332,on:418,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3324, Québec 2024 = 332 k$, Ontario 418 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"ener-valves",v:"ÉNER",label:"Autres produits métalliques (valves, raccords)",naics:"3329",qc:253,on:397,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3329, Québec 2024 = 253 k$, Ontario 397 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"mach-3339",v:"ÉNER",label:"Autres machines d'usage général (pompes, compresseurs, procédé)",naics:"3339",qc:345,on:419,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3339, Québec 2024 = 345 k$, Ontario 419 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"sv-nettoyants",v:"SV",label:"Savons, nettoyants et désinfectants",naics:"3256",qc:442,on:552,m:[8, 15.5, 22],x:[5, 6, 7.5],src:"R/E : SCIAN 3256, Québec 2024 = 442 k$, Ontario 552 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe pharma et chimie 15,5 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"def-traitement",v:"Défense",label:"Revêtement, gravure et traitement thermique",naics:"3328",qc:195,on:271,m:[6, 11.9, 18],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3328, Québec 2024 = 195 k$, Ontario 271 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"def-moteurs",v:"Défense",label:"Moteurs, turbines et transmission",naics:"3336",qc:265,on:568,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3336, Québec 2024 = 265 k$, Ontario 568 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"def-communication",v:"Défense",label:"Matériel de communication",naics:"3342",qc:509,on:354,m:[5, 9.9, 16],x:[5, 6, 7.5],src:"R/E : SCIAN 3342, Québec 2024 = 509 k$, Ontario 354 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"def-navale",v:"Défense",label:"Construction de navires et d'embarcations",naics:"3366",qc:551,on:595,m:[4, 8, 13],x:[4.5, 5.5, 6.5],src:"R/E : aucune série provinciale publiée pour le SCIAN 3366 (données confidentielles); repli sur le total manufacturier, Québec 551 k$, Ontario 595 k$. Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"emb-papier",v:"",label:"Produits en papier transformé (emballage)",naics:"3222",qc:469,on:649,m:[5, 9.9, 15],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3222, Québec 2024 = 469 k$, Ontario 649 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"plast",v:"",label:"Produits en plastique",naics:"3261",qc:397,on:434,m:[5, 9.9, 15],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3261, Québec 2024 = 397 k$, Ontario 434 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"met-nonferreux",v:"",label:"Métaux non ferreux (sauf aluminium)",naics:"3314",qc:3420,on:950,m:[4, 9.9, 16],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3314, Québec 2024 = 3420 k$, Ontario 950 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Revenu par employé élevé : la moyenne est tirée par les gros transformateurs de matières premières; une PME sera souvent plus bas. Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"met-forge",v:"",label:"Forgeage et estampage",naics:"3321",qc:383,on:440,m:[6, 11.9, 18],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3321, Québec 2024 = 383 k$, Ontario 440 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"met-outils",v:"",label:"Coutellerie et outils à main",naics:"3322",qc:307,on:243,m:[6, 11.9, 18],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3322, Québec 2024 = 307 k$, Ontario 243 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"met-quincaillerie",v:"",label:"Quincaillerie",naics:"3325",qc:414,on:446,m:[6, 11.9, 18],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3325, Québec 2024 = 414 k$, Ontario 446 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"met-ressorts",v:"",label:"Ressorts et produits en fil",naics:"3326",qc:310,on:513,m:[6, 11.9, 18],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3326, Québec 2024 = 310 k$, Ontario 513 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"mach-agri",v:"",label:"Machines agricoles, de construction et d'extraction",naics:"3331",qc:362,on:381,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3331, Québec 2024 = 362 k$, Ontario 381 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"mach-industrielle",v:"",label:"Machinerie industrielle",naics:"3332",qc:324,on:502,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3332, Québec 2024 = 324 k$, Ontario 502 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"mach-commerciale",v:"",label:"Machines pour le commerce et les services (dont purification de l'eau)",naics:"3333",qc:340,on:415,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3333, Québec 2024 = 340 k$, Ontario 415 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"mach-metal",v:"",label:"Machines pour le travail du métal (moules, outillage)",naics:"3335",qc:275,on:324,m:[6, 11.9, 18],x:[5, 6, 7],src:"R/E : SCIAN 3335, Québec 2024 = 275 k$, Ontario 324 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes du groupe métal et machinerie 11,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"elec-menagers",v:"Hors thèse",label:"Appareils ménagers",naics:"3352",qc:348,on:367,m:[4, 9.9, 15],x:[4.5, 5.5, 6.5],src:"R/E : SCIAN 3352, Québec 2024 = 348 k$, Ontario 367 k$ (revenus totaux 16-10-0117-01 ÷ employés 14-10-0202-01). Marge : BAIIA des entreprises canadiennes de la fabrication 9,9 % (StatCan 33-10-0500-01, moy. 2022-2024). Écart propre à la sous-industrie non calculé : fourchette volontairement large. Multiple : petites transactions manufacturières (GF Data 2025 : 5,6x à 6,7x; manufacturier 5,8x)."},
+  {id:"serv-reparation",v:"Services B2B",label:"Réparation et entretien de machinerie et d'équipement électronique",naics:"8112, 8113",qc:209,on:241,m:[4, 8.5, 14],x:[5, 6, 7.5],src:"R/E : revenus d'exploitation 2024 (StatCan 21-10-0060-01 : Québec 2 597 M$, Ontario 3 907 M$) ÷ employés SCIAN 8112 + 8113 (14-10-0202-01 : 12 406 et 16 180) = 209 k$ et 241 k$. Marge : marge d'exploitation 2022-2024 de 21-10-0060-01, Québec 9,3 %, Ontario 7,3 % (après amortissement; le BAIIA est un peu plus haut). Fourchette large. Multiple : services techniques B2B, hypothèse Basalt."},
+  {id:"serv-genie",v:"Services B2B",label:"Services de génie et laboratoires d'essais",naics:"5413",qc:159,on:193,m:[5, 9.5, 15],x:[5, 6, 7.5],src:"R/E : revenus d'exploitation 2024 des services de génie 54133 (StatCan 21-10-0163-01 : Québec 8 265 M$, Ontario 16 942 M$) ÷ employés de tout le SCIAN 5413 (14-10-0202-01 : 51 947 et 87 814) = 159 k$ et 193 k$, sous-estimé parce que le dénominateur inclut l'architecture. Marge : marge d'exploitation 2022-2024 de 21-10-0163-01, Québec 9,9 %, Ontario 9,2 %. Multiple : services techniques B2B, hypothèse Basalt."},
+  {id:"serv-rd",v:"",label:"Recherche et développement scientifiques (services)",naics:"5417",qc:200,on:200,m:[5, 12, 20],x:[5, 6.5, 8],src:"Hypothèse Basalt, à valider : StatCan ne publie pas de revenus par province pour le SCIAN 5417. R/E calé sur les autres services professionnels (159 à 241 k$). Marge et multiple : hypothèses larges."},
+  {id:"sv-labos",v:"SV",label:"Laboratoires médicaux et d'analyse diagnostique",naics:"6215",qc:200,on:200,m:[8, 14, 20],x:[6, 7, 8.5],src:"Hypothèse Basalt, à valider : StatCan ne publie pas de revenus par province pour le SCIAN 6215. R/E calé sur les autres services professionnels. Marge et multiple : service réglementé et récurrent, comme la stérilisation; à remplacer dès la première donnée réelle."},
   {id:"mfg-general",v:"",label:"Manufacturier (moyenne, repli)",naics:"31-33",qc:550,on:595,m:[6,10,14],x:[5,6,7],src:"Repli quand aucune industrie n'est choisie. R/E : total manufacturier Québec 2024 = 551 k$ (tiré vers le haut par l'industrie lourde), Ontario 596 k$. Marge : 9,9 %."},
 ];
-const VERT_BENCH={"AGRO":"agro-autres","SV":"sv-dispositifs","ÉNER":"ener-controles","Défense":"ind-usinage"};
+const VERT_BENCH={"AGRO":"agro-autres","SV":"sv-dispositifs","ÉNER":"ener-controles","Défense":"ind-usinage","Services B2B":"serv-reparation"};
 const BENCH_MULT_SRC="Multiples : GF Data 2025 (rachats de 10 à 500 M$ US, via CIBC, T1 2026) : moyenne 7,2x, manufacturier 6,6x, moyenne historique du manufacturier 6,2x. Petites transactions, premier semestre 2025 : 5,6x de 5 à 10 M$ US, 6,2 à 6,7x de 10 à 25 M$ US, manufacturier 5,8x. Courtiers PME au Québec : 3 à 7x, manufacturier 5,5 à 7x le BAIIA normalisé. L'écart entre sous-secteurs (±0,5 à 1x) est une hypothèse Basalt.";
 const BENCH_CALIB=[
   "Neptronic (CVAC, Montréal) : ~75 M$ US de revenus (~103 M$ CA) pour plus de 300 employés, soit ~340 k$ par employé (communiqué SPX, juillet 2026). Hypothèse CVAC Québec : 380 k$, écart de −11 %.",
@@ -889,7 +931,8 @@ function sizeOf(it){
   }
   const ebIn=rng(it.baiia);
   if(ebIn)out.eb={...ebIn,p:pvOf(it,"baiia")==="verifie"?"v":"e",how:"saisi"};
-  else if(out.ca&&b){const m=b.m[1]/100;out.eb={lo:out.ca.lo*m,hi:out.ca.hi*m,mid:out.ca.mid*m,p:"e",how:"marge"};}
+  /* Fourchette large : CA bas × marge basse jusqu'à CA haut × marge haute, pour ne rien perdre; la valeur centrale garde la marge centrale. */
+  else if(out.ca&&b){out.eb={lo:out.ca.lo*b.m[0]/100,hi:out.ca.hi*b.m[2]/100,mid:out.ca.mid*b.m[1]/100,p:"e",how:"marge"};}
   if(out.eb&&b&&out.eb.mid>0)out.ve={lo:out.eb.mid*b.x[0],hi:out.eb.mid*b.x[2],mid:out.eb.mid*b.x[1],p:"e"};
   return out;
 }
@@ -906,7 +949,7 @@ function sizeTitle(it,sz,k){
   }
   if(k==="eb"){
     if(s.how==="saisi")return `${s.p==="v"?"Vérifié":"Estimé (saisi)"} : ${it.baiia} M$${src("baiia")}`;
-    return `Estimé ${rg}. CA central × marge BAIIA de ${dec(b.m[1])} % (${b.label} : ${dec(b.m[0])} à ${dec(b.m[2])} %).`;
+    return `Estimé ${rg}. Centre : CA central × marge de ${dec(b.m[1])} %. Fourchette : CA bas × ${dec(b.m[0])} % jusqu'à CA haut × ${dec(b.m[2])} % (${b.label}).`;
   }
   if(k==="ve")return `Estimé ${rg}. BAIIA central de ${fmtM(sz.eb.mid)} M$ × multiple de ${dec(b.x[1])}x (${dec(b.x[0])} à ${dec(b.x[2])}x, ${b.label}).`;
   return "";
@@ -930,7 +973,7 @@ function verdictOf(it,sz){
   if(eb&&(eb.lo>c.ebMax||eb.hi<c.addonEbMin))return "Rejet · taille";
   const m=multOf(it,sz);
   if(m!=null&&m>c.multMax)return "Rejet · prix";
-  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<c.ebMin))return "Add-on";
+  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<ebFloor(it)))return "Add-on";
   if(!ca&&!eb)return "À valider";
   if(!it.province||!it.verticale||it.verticale==="À classer")return "À valider";
   return "Passe";
@@ -955,7 +998,7 @@ function scoreOf(it,v,sz){
   let taille;
   if(v==="Passe"){
     const ca=caR,eb=ebR;
-    const lowHalf=(eb?eb.mid<=(CFG.ebMin+CFG.ebMax)/2:true)&&(ca?ca.mid<=(CFG.caMin+CFG.caMax)/2:true);
+    const lowHalf=(eb?eb.mid<=(ebFloor(it)+CFG.ebMax)/2:true)&&(ca?ca.mid<=(CFG.caMin+CFG.caMax)/2:true);
     taille=lowHalf?25:20;
   }else if(v==="Add-on")taille=12;
   else if(v==="À valider")taille=8;
@@ -1375,7 +1418,7 @@ const inStage=(...st)=>all().filter(it=>st.includes(it.stage));
 const COLS={
   _sel:{label:"",grp:"Cible",w:38,kind:"sel"},
   name:{label:"Entreprise",grp:"Cible",w:240,kind:"name"},
-  verticale:{label:"Verticale",grp:"Cible",w:112,kind:"select",opts:VERTICALES,noBlank:true},
+  verticale:{label:"Verticale",grp:"Cible",w:170,kind:"select",opts:VERTICALES,noBlank:true,lab:vlab},
   priorite:{label:"Prio.",grp:"Cible",w:62,kind:"select",opts:PRIORITES},
   soussecteur:{label:"Sous-secteur",grp:"Cible",w:230,kind:"text"},
   ville:{label:"Ville",grp:"Cible",w:138,kind:"text"},
@@ -1453,7 +1496,7 @@ function sorted(list,st){
 function optHTML(c,v){
   const opts=c.noBlank?c.opts:["",...c.opts];
   const has=!v||c.opts.includes(v);
-  return (has?"":`<option selected>${esc(v)}</option>`)+opts.map(o=>`<option value="${esc(o)}"${o===(v||"")?" selected":""}>${o?esc(o):"—"}</option>`).join("");
+  return (has?"":`<option selected>${esc(v)}</option>`)+opts.map(o=>`<option value="${esc(o)}"${o===(v||"")?" selected":""}>${o?esc(c.lab?c.lab(o):o):"—"}</option>`).join("");
 }
 function vchip(d){const g=GROUPS.find(x=>x.id===d.group);return `<span class="vchip ${d.group}"><i aria-hidden="true">${g.icon}</i>${esc(d.verdict)}</span>`;}
 function scoreTitle(d){const p=d.parts;return `Succession ${p.succ}/35 · Taille ${p.taille}/25 · Fit ${p.fit}/20 · Leviers ${p.lev}/10 · Données ${p.data}/10`;}
@@ -1537,7 +1580,7 @@ function renderSheet(key,list,emptyText){
     const d=D(it);
     html+=`<tr class="${d.group}" data-row="${esc(it.id)}">`+keys.map(k=>cellHTML(key,COLS[k],k,it,d,lefts[k])).join("")+`</tr>`;
   });
-  html+=`</tbody></table></div><div class="fb"></div><div class="sheet-foot"><span><span class="fx">ƒ</span> colonne calculée : verdict selon tes seuils (CA ${CFG.caMin}–${CFG.caMax} M$, BAIIA ${CFG.ebMin}–${CFG.ebMax} M$, multiple ≤ ${CFG.multMax}x), score sur 100. CA, BAIIA et VE : valeur centrale, survole pour la fourchette et le calcul.</span><span class="plegend"><span class="pv e">≈ estimé</span><span class="pv v">vérifié ✓</span><span>Tri : ${esc(COLS[st.sort]?COLS[st.sort].label:"")} ${st.dir<0?"↓":"↑"}</span></span></div></div>`;
+  html+=`</tbody></table></div><div class="fb"></div><div class="sheet-foot"><span><span class="fx">ƒ</span> colonne calculée : verdict selon tes seuils (CA ${CFG.caMin}–${CFG.caMax} M$, BAIIA du plancher de la verticale à ${CFG.ebMax} M$ : ${esc(floorsTxt(CFG))}; multiple ≤ ${CFG.multMax}x), score sur 100. CA, BAIIA et VE : valeur centrale, survole pour la fourchette et le calcul.</span><span class="plegend"><span class="pv e">≈ estimé</span><span class="pv v">vérifié ✓</span><span>Tri : ${esc(COLS[st.sort]?COLS[st.sort].label:"")} ${st.dir<0?"↓":"↑"}</span></span></div></div>`;
   const prev=$(".sheet-scroll",host);const sl=prev?prev.scrollLeft:0,stp=prev?prev.scrollTop:0;
   host.innerHTML=html;
   const sc=$(".sheet-scroll",host);sc.scrollLeft=sl;sc.scrollTop=stp;
@@ -1571,7 +1614,7 @@ function ticketHTML(it,mode){
   const d=D(it),fl=(it.flags||[]).length;
   let h=`<article class="ticket ${d.group}" data-open="${esc(it.id)}" tabindex="0"${mode==="suivi"?` draggable="true" data-drag="${esc(it.id)}"`:""}>
     <div class="t-top"><div class="t-name">${esc(it.name||"Sans nom")}${it.suffix?` <small>${esc(it.suffix)}</small>`:""}</div><span class="t-score" title="${esc(scoreTitle(d))}">${d.score}</span></div>
-    <div class="t-meta">${[it.verticale,it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>
+    <div class="t-meta">${[vlab(it.verticale),it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div>
     <div class="t-row">${vchip(d)}<span class="t-flags">${fl?fl+" red flag"+(fl>1?"s":""):""}</span></div>
     ${contactHTML(it)}`;
   if(mode==="envoi"){
@@ -1757,7 +1800,7 @@ function renderSteps(R){
   const rows=TRI.steps.map((s,i)=>{
     const def=TRI_FIELDS[s.field]||{label:s.field};
     const rule=def.kind==="flag"?`<span>Retire les entreprises marquées détenues par un fonds, un stratégique ou une coopérative, déjà acquises ou fermées.</span>`:def.kind==="set"
-      ?`<span>${esc(def.label)} parmi</span>`+def.opts.map(o=>`<button type="button" class="fchip${(s.values||[]).includes(o)?" on":""}" data-stv="${i}" data-v="${esc(o)}" aria-pressed="${(s.values||[]).includes(o)}">${esc(o)}</button>`).join("")
+      ?`<span>${esc(def.label)} parmi</span>`+def.opts.map(o=>`<button type="button" class="fchip${(s.values||[]).includes(o)?" on":""}" data-stv="${i}" data-v="${esc(o)}" aria-pressed="${(s.values||[]).includes(o)}">${esc(s.field==="verticale"?vlab(o):o)}</button>`).join("")
       :`<span>${esc(def.label)} ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":String(s.min).replace(".",",")}" aria-label="Minimum de l'étape ${i+1}" inputmode="decimal"><span>et ≤</span><input class="num" data-stmax="${i}" value="${s.max==null?"":String(s.max).replace(".",",")}" aria-label="Maximum de l'étape ${i+1}" inputmode="decimal"><span>${esc(def.unit||"")}</span>`;
     let count=`<span style="color:var(--ink-3)">Étape ignorée</span>`;
     if(s.on&&TRI_FIELDS[s.field]&&R.N){
@@ -1820,7 +1863,7 @@ function renderTriList(R){
     const p=UROWS[i],fa=R.fate[i],age=triVal(p,"ageEnt");
     const inT=names.has(normName(p.n));
     const g=fa.out>=0?"out":fa.state==="ok"?"keep":"check";
-    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(p.vt||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${esc(p.ca||"—")}</td><td class="calc">${esc(p.eb||"—")}</td><td class="calc">${p.px==null||p.px===""?"—":esc(p.px)}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${inT?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:""}</div></td></tr>`;
+    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(vlab(p.vt)||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${esc(p.ca||"—")}</td><td class="calc">${esc(p.eb||"—")}</td><td class="calc">${p.px==null||p.px===""?"—":esc(p.px)}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${inT?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:""}</div></td></tr>`;
   }).join("");
   host.innerHTML=`<div class="sheet-wrap" style="--stick:240px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map((c,i)=>`<th${i===0?' class="stk" style="left:0;top:0"':' style="top:0"'}>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
   $$("[data-promo]",host).forEach(b=>b.onclick=()=>promote([UROWS[+b.dataset.promo]]));
@@ -1959,7 +2002,7 @@ function showMapping(){
   box.innerHTML=`<div class="prev"><div class="bar"><span><b style="color:var(--rock-ink)">${fmt(UPARSE.rows.length)} lignes</b> lues. Vérifie quelle colonne correspond à quoi.</span><button class="btn sm amber" id="univGo">Importer ${fmt(UPARSE.rows.length)} profils</button></div>
   <div class="mapgrid">${UFIELDS.map(f=>`<label class="${f.req?"req":""}" for="um-${f.k}">${esc(f.label)}${f.req?" (obligatoire)":""}<select id="um-${f.k}" data-um="${f.k}">${opts(map[f.k])}</select></label>`).join("")}</div>
   <div class="hint" id="univPrev" style="margin-top:10px"></div></div>`;
-  const prev=()=>{const m=readMap();const ps=UPARSE.rows.slice(0,3).map(r=>toProfile(k=>m[k]==null?"":r[m[k]],"aperçu")).filter(Boolean);$("#univPrev").innerHTML="Aperçu : "+(ps.length?ps.map(p=>`<b style="color:var(--rock-ink)">${esc(p.n)}</b> (${[p.vt,p.v,p.p,p.f&&"fondée "+p.f,p.e&&p.e+" employés",p.ca&&"CA "+p.ca].filter(Boolean).map(esc).join(", ")})`).join(" · "):"aucun nom lu, choisis la colonne du nom.");};
+  const prev=()=>{const m=readMap();const ps=UPARSE.rows.slice(0,3).map(r=>toProfile(k=>m[k]==null?"":r[m[k]],"aperçu")).filter(Boolean);$("#univPrev").innerHTML="Aperçu : "+(ps.length?ps.map(p=>`<b style="color:var(--rock-ink)">${esc(p.n)}</b> (${[vlab(p.vt),p.v,p.p,p.f&&"fondée "+p.f,p.e&&p.e+" employés",p.ca&&"CA "+p.ca].filter(Boolean).map(esc).join(", ")})`).join(" · "):"aucun nom lu, choisis la colonne du nom.");};
   $$("[data-um]",box).forEach(s=>s.addEventListener("change",prev));prev();
   $("#univGo").onclick=importUniv;
 }
@@ -2024,7 +2067,7 @@ function renderStats(){
   $("#n-suivi").textContent=all().filter(it=>SUIVI.some(s=>s.id===it.stage)).length;
 }
 function renderFilters(){
-  $("#fVert").innerHTML=VERTICALES.map(v=>`<button type="button" class="fchip${F.vert.has(v)?" on":""}" data-fvert="${esc(v)}" aria-pressed="${F.vert.has(v)}">${esc(v)}</button>`).join("");
+  $("#fVert").innerHTML=VERTICALES.map(v=>`<button type="button" class="fchip${F.vert.has(v)?" on":""}" data-fvert="${esc(v)}" aria-pressed="${F.vert.has(v)}">${esc(vlab(v))}</button>`).join("");
   $("#fGrp").innerHTML=GROUPS.map(g=>`<button type="button" class="fchip${F.grp.has(g.id)?" on":""}" data-fgrp="${g.id}" aria-pressed="${F.grp.has(g.id)}"><span class="dot" style="background:${g.c}"></span>${g.n}</button>`).join("");
   $("#fCanal").innerHTML=`<option value="">Tous canaux</option><option value="tier:A">Tier A · déjà en processus</option><option value="tier:B">Tier B · processus avorté</option><option value="tier:C">Tier C · hors marché</option>`+CANAL_NAMES.map(c=>`<option>${esc(c)}</option>`).join("");
   $("#fCanal").value=F.canal;$("#fProv").value=F.prov;$("#fDays").value=String(F.days);$("#fScore").value=F.score;$("#fScoreV").textContent=F.score;$("#fq").value=F.q;
@@ -2172,7 +2215,7 @@ let rsz=null;window.addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTime
 const T_FIELDS=["priorite","role","ageFond","name","suffix","stage","ref","neq","site","verticale","soussecteur","canal","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","transaction","raison","mix","recurrence","fit","exclusion","bridge","owner","flags","contactName","contactEmail","sendDate","channel","sendStatus","followup","slide","badgeOrigine","dateAdded","notes","raw"];
 function fillSelect(id,opts,blank){$("#"+id).innerHTML=(blank?`<option value="">—</option>`:"")+opts.map(o=>typeof o==="string"?`<option value="${esc(o)}">${esc(o)}</option>`:`<option value="${esc(o.v)}">${esc(o.n)}</option>`).join("");}
 fillSelect("t-stage",STAGES.map(s=>({v:s.id,n:s.n})));
-fillSelect("t-verticale",VERTICALES);fillSelect("t-canal",CANAL_NAMES,true);fillSelect("t-province",PROVINCES,true);
+fillSelect("t-verticale",VERTICALES.map(v=>({v,n:vlab(v)})));fillSelect("t-canal",CANAL_NAMES,true);fillSelect("t-province",PROVINCES,true);
 fillSelect("t-confTaille",CONF,true);fillSelect("t-transaction",TRANSACTIONS,true);fillSelect("t-raison",RAISONS,true);
 fillSelect("t-priorite",PRIORITES,true);fillSelect("t-role",ROLES,true);fillSelect("t-mix",MIX,true);fillSelect("t-recurrence",RECUR,true);fillSelect("t-fit",FITS);fillSelect("t-exclusion",EXCLUSIONS,true);
 let editing=null;
@@ -2342,6 +2385,8 @@ $("#acPw").addEventListener("submit",async e=>{
 const TH=["caMin","caMax","ebMin","ebMax","addonCaMin","addonEbMin","multMax"];
 function fillThese(c){
   TH.forEach(k=>$("#th-"+k).value=String(c[k]).replace(".",","));
+  const fl=c.ebMinV||{};
+  $("#thVert").innerHTML=THESE_VERTS.map((v,i)=>`<div class="f"><label for="th-v${i}">${esc(vlab(v))}</label><input id="th-v${i}" data-vk="${esc(v)}" inputmode="decimal" value="${esc(String(Number.isFinite(fl[v])?fl[v]:c.ebMin).replace(".",","))}"></div>`).join("");
   $("#thProv").innerHTML=PROVINCES.map(p=>`<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" value="${p}" style="width:auto"${c.provinces.includes(p)?" checked":""}> ${p==="Autre"?"Autres provinces":p}</label>`).join("");
 }
 $("#btnThese").addEventListener("click",()=>{fillThese(CFG);openOverlay($("#ovThese"));});
@@ -2350,6 +2395,8 @@ $("#thForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const c={};
   for(const k of TH){const v=num($("#th-"+k).value);if(v==null){$("#th-"+k).focus();toast("Seuil invalide : "+k,"err");return;}c[k]=v;}
+  c.ebMinV={};
+  for(const el of $$("#thVert input")){const v=num(el.value);if(v==null){el.focus();toast("Plancher invalide : "+vlab(el.dataset.vk),"err");return;}c.ebMinV[el.dataset.vk]=v;}
   c.provinces=$$("#thProv input:checked").map(x=>x.value);
   if(!db){toast("Base indisponible : seuils non enregistrés.","err");return;}
   try{await db.doc("config/these").set(c);CFG={...DEFAULT_CFG,...c};closeOverlay($("#ovThese"));DER=new Map();renderAll();toast("Seuils enregistrés. Verdicts recalculés.");}
@@ -2364,7 +2411,7 @@ function fillBench(list,disp){
   $("#b-disp").value=dec(Math.round(disp*100));
   const cnt=id=>all().filter(it=>benchOf(it)&&benchOf(it).id===id).length;
   const trio=(i,f,a)=>`<div class="trio">${[0,1,2].map(j=>`<input data-b="${i}" data-f="${f}${j}" value="${dec(a[j])}" inputmode="decimal" aria-label="${f==="m"?"Marge":"Multiple"} ${["basse","centrale","haute"][j]}">`).join("")}</div>`;
-  $("#bTab").innerHTML=`<thead><tr><th>Industrie</th><th>Rev./employé QC (k$)</th><th>Rev./employé ON (k$)</th><th>Marge BAIIA % · bas, centre, haut</th><th>Multiple VE/BAIIA · bas, centre, haut</th><th style="text-align:right">Cibles</th></tr></thead><tbody>`+list.map((b,i)=>`<tr><td class="lab"><b>${esc(b.label)}</b><span>${esc(b.v||"Tous")} · SCIAN ${esc(b.naics)}</span></td><td><input data-b="${i}" data-f="qc" value="${dec(b.qc)}" inputmode="decimal" aria-label="Revenu par employé Québec : ${esc(b.label)}"></td><td><input data-b="${i}" data-f="on" value="${dec(b.on)}" inputmode="decimal" aria-label="Revenu par employé Ontario : ${esc(b.label)}"></td><td>${trio(i,"m",b.m)}</td><td>${trio(i,"x",b.x)}</td><td class="cnt">${cnt(b.id)}</td></tr><tr class="srcrow"><td colspan="6"><textarea data-b="${i}" data-f="src" aria-label="Source : ${esc(b.label)}">${esc(b.src)}</textarea></td></tr>`).join("")+`</tbody>`;
+  $("#bTab").innerHTML=`<thead><tr><th>Industrie</th><th>Rev./employé QC (k$)</th><th>Rev./employé ON (k$)</th><th>Marge BAIIA % · bas, centre, haut</th><th>Multiple VE/BAIIA · bas, centre, haut</th><th style="text-align:right">Cibles</th></tr></thead><tbody>`+list.map((b,i)=>`<tr><td class="lab"><b>${esc(b.label)}</b><span>${esc(b.v?vlab(b.v):"Toutes verticales")} · SCIAN ${esc(b.naics)}</span></td><td><input data-b="${i}" data-f="qc" value="${dec(b.qc)}" inputmode="decimal" aria-label="Revenu par employé Québec : ${esc(b.label)}"></td><td><input data-b="${i}" data-f="on" value="${dec(b.on)}" inputmode="decimal" aria-label="Revenu par employé Ontario : ${esc(b.label)}"></td><td>${trio(i,"m",b.m)}</td><td>${trio(i,"x",b.x)}</td><td class="cnt">${cnt(b.id)}</td></tr><tr class="srcrow"><td colspan="6"><textarea data-b="${i}" data-f="src" aria-label="Source : ${esc(b.label)}">${esc(b.src)}</textarea></td></tr>`).join("")+`</tbody>`;
   $("#bCal").innerHTML=`<li style="list-style:none;margin-left:-18px;color:var(--amber-rock);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">Points de calibration</li>`+BENCH_CALIB.map(c=>`<li>${esc(c)}</li>`).join("");
   $("#bSrc").innerHTML=`Sources : <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1610011701" target="_blank" rel="noopener">StatCan 16-10-0117-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=1410020201" target="_blank" rel="noopener">StatCan 14-10-0202-01</a> · <a href="https://www150.statcan.gc.ca/t1/tbl1/fr/tv.action?pid=3310050001" target="_blank" rel="noopener">StatCan 33-10-0500-01</a> · <a href="https://cms.cibcusmmib.com/wp-content/uploads/2026/04/US-Middle-Market-Monitor_Q1-2026.pdf" target="_blank" rel="noopener">CIBC / GF Data, T1 2026</a> · <a href="https://middlemarketgrowth.org/fall-2025-gf-data-small-deals-h1/" target="_blank" rel="noopener">GF Data, petites transactions S1 2025</a> · <a href="https://www.capstonepartners.com/insights/article-hvac-equipment-sector-ma-update/" target="_blank" rel="noopener">Capstone, CVAC 2026</a> · <a href="https://www.mccarthy.ca/en/experience/spx-technologies-inc-acquires-neptronic-inc-for-c-605m" target="_blank" rel="noopener">SPX / Neptronic</a>`;
 }
@@ -2499,7 +2546,7 @@ function renderPreview(){
   box.innerHTML=`<div class="bar"><span>${n} sur ${PREVIEW.length} sélectionnée${n>1?"s":""} · destination <b style="color:var(--rock-ink)">${STAGE_N[$("#ingDest").value]}</b></span><span style="display:flex;gap:8px"><button class="btn sm" id="pvCancel" style="background:var(--rock-2);color:var(--rock-ink);border-color:var(--rock-rule)">Annuler</button><button class="btn sm amber" id="pvAdd"${n?"":" disabled"}>Ajouter ${n} cible${n>1?"s":""}</button></span></div>
   <div class="prev-grid">${PREVIEW.map((p,i)=>{
     const it=p.it,d={...D(it)};DER.delete(it.id);
-    return `<div class="pcard${p.on?"":" off"}"><div class="pc-top"><input type="checkbox" data-pv="${i}"${p.on?" checked":""} aria-label="Garder ${esc(it.name)}"><div><div class="pc-name">${esc(it.name)}</div><div class="pc-meta">${[it.verticale,it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div></div></div>
+    return `<div class="pcard${p.on?"":" off"}"><div class="pc-top"><input type="checkbox" data-pv="${i}"${p.on?" checked":""} aria-label="Garder ${esc(it.name)}"><div><div class="pc-name">${esc(it.name)}</div><div class="pc-meta">${[vlab(it.verticale),it.soussecteur,[it.ville,it.province].filter(Boolean).join(", ")].filter(Boolean).map(esc).join(" · ")}</div></div></div>
     <div class="pc-kv"><span>${vchip(d)}</span><span><b>Score</b> ${d.score}</span><span><b>CA</b> ${esc(it.ca||"—")}</span><span><b>BAIIA</b> ${esc(it.baiia||"—")}</span><span><b>Fondée</b> ${it.fondation||"—"}</span><span><b>Raison</b> ${esc(it.raison||"—")}</span></div>
     ${p.dup?`<div class="dup">Déjà dans la base : ${esc(p.dup.name)} (${esc(STAGE_N[p.dup.stage]||"")}). Les champs vides y seront complétés.</div>`:""}</div>`;
   }).join("")}</div>`;
