@@ -375,6 +375,7 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 .st-rule{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
 .st-rule .fchip{padding:2px 8px;font-size:11px}
 .st-unk{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.st-mode{display:inline-flex;align-items:center;gap:5px;color:var(--ink-3)}
 .st-count{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .st-count b{color:var(--ink)}
 .st-count .cut{color:var(--danger);font-weight:600}
@@ -521,7 +522,7 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
   <!-- ENTONNOIR -->
   <section class="panel" id="panel-entonnoir">
     <div class="ptool">
-      <div class="intro"><b>Le tri brutal.</b> Toutes les cibles du tracker passent dans l'entonnoir, plus les profils importés (REQ, ICRIQ, listes Excel) qui n'y sont pas encore. Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. CA et BAIIA : la valeur vérifiée, sinon l'estimé du tracker (≈). Ce qui reste à la fin est ta shortlist.</div>
+      <div class="intro"><b>Le tri brutal.</b> Toutes les cibles du tracker passent dans l'entonnoir, plus les profils importés (REQ, ICRIQ, listes Excel) qui n'y sont pas encore. Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. CA et BAIIA : la valeur vérifiée, sinon l'estimé du tracker (≈), testé sur sa valeur centrale (réglable par étape). Ce qui reste à la fin est ta shortlist.</div>
       <div class="right"><button class="btn dark" id="btnUniv">+ Importer des profils</button></div>
     </div>
     <div class="ingest" id="univBox" hidden>
@@ -1644,12 +1645,13 @@ const DEFAULT_STEPS=[
   {field:"dispo",label:"Déjà détenue / non disponible",unknown:"keep",on:true},
   {field:"ageEnt",label:"Entreprise trop jeune",min:20,max:null,unknown:"keep",on:true},
   {field:"ageFond",label:"Fondateur trop jeune",min:55,max:null,unknown:"keep",on:true},
-  {field:"employes",label:"Trop petite",min:20,max:null,unknown:"keep",on:true},
-  {field:"ca",label:"CA hors fourchette",min:5,max:35,unknown:"keep",on:true},
-  {field:"baiia",label:"BAIIA hors fourchette",min:0.5,max:5,unknown:"keep",on:true},
+  {field:"employes",label:"Trop petite",min:20,max:null,unknown:"keep",mode:"mid",on:true},
+  {field:"ca",label:"CA hors fourchette",min:5,max:35,unknown:"keep",mode:"mid",on:true},
+  {field:"baiia",label:"BAIIA hors fourchette",min:0.5,max:5,unknown:"keep",mode:"mid",on:true},
   {field:"multiple",label:"Trop chère",min:null,max:7,unknown:"keep",on:true},
 ];
 let TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};
+const RANGE_FIELDS=["employes","ca","baiia"];   // champs qui peuvent être des fourchettes
 let UNIV=new Map(),UROWS=[],TROWS=[],TFOCUS=null,TRES=null;
 const fmt=n=>Number(n||0).toLocaleString("fr-CA");
 
@@ -1692,7 +1694,10 @@ function stepTest(s,p){
   if(def.kind==="flag")return !v;
   if(v==null)return null;
   if(def.kind==="set")return (s.values||[]).includes(v);
-  const lo=typeof v==="object"?v.lo:v,hi=typeof v==="object"?v.hi:v;
+  /* Une fourchette (estimé, ou « 10-35 ») se teste par défaut sur sa valeur centrale; « toute la fourchette » ne retire
+     que si elle est entièrement hors des bornes, ce qui garde presque tout quand l'estimé est large. */
+  const whole=s.mode==="range";
+  const lo=typeof v==="object"?(whole?v.lo:v.mid):v,hi=typeof v==="object"?(whole?v.hi:v.mid):v;
   if(s.min!=null&&hi<s.min)return false;
   if(s.max!=null&&lo>s.max)return false;
   return true;
@@ -1821,7 +1826,7 @@ function renderSteps(R){
     const def=TRI_FIELDS[s.field]||{label:s.field};
     const rule=def.kind==="flag"?`<span>Retire les entreprises marquées détenues par un fonds, un stratégique ou une coopérative, déjà acquises ou fermées.</span>`:def.kind==="set"
       ?`<span>${esc(def.label)} parmi</span>`+def.opts.map(o=>`<button type="button" class="fchip${(s.values||[]).includes(o)?" on":""}" data-stv="${i}" data-v="${esc(o)}" aria-pressed="${(s.values||[]).includes(o)}">${esc(s.field==="verticale"?vlab(o):o)}</button>`).join("")
-      :`<span>${esc(def.label)} ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":String(s.min).replace(".",",")}" aria-label="Minimum de l'étape ${i+1}" inputmode="decimal"><span>et ≤</span><input class="num" data-stmax="${i}" value="${s.max==null?"":String(s.max).replace(".",",")}" aria-label="Maximum de l'étape ${i+1}" inputmode="decimal"><span>${esc(def.unit||"")}</span>`;
+      :`<span>${esc(def.label)} ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":String(s.min).replace(".",",")}" aria-label="Minimum de l'étape ${i+1}" inputmode="decimal"><span>et ≤</span><input class="num" data-stmax="${i}" value="${s.max==null?"":String(s.max).replace(".",",")}" aria-label="Maximum de l'étape ${i+1}" inputmode="decimal"><span>${esc(def.unit||"")}</span>${RANGE_FIELDS.includes(s.field)?`<span class="st-mode">· tester <select data-stmode="${i}" aria-label="Comment tester une fourchette à l'étape ${i+1}"><option value="mid"${s.mode!=="range"?" selected":""}>la valeur centrale</option><option value="range"${s.mode==="range"?" selected":""}>toute la fourchette</option></select></span>`:""}`;
     let count=`<span style="color:var(--ink-3)">Étape ignorée</span>`;
     if(s.on&&TRI_FIELDS[s.field]&&R.N){
       const j=ei++,S=R.st[j],inN=R.cols[j].ok+R.cols[j].unk,cut=S.okout+S.unkout,rest=R.cols[j+1].ok+R.cols[j+1].unk;
@@ -1846,6 +1851,7 @@ $("#steps").addEventListener("change",e=>{
   if(d.stmin!=null){TRI.steps[+d.stmin].min=num(t.value);saveTri();return;}
   if(d.stmax!=null){TRI.steps[+d.stmax].max=num(t.value);saveTri();return;}
   if(d.stunk!=null){TRI.steps[+d.stunk].unknown=t.value;saveTri();return;}
+  if(d.stmode!=null){TRI.steps[+d.stmode].mode=t.value;saveTri();return;}
 });
 $("#steps").addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;const d=t.dataset;
