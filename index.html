@@ -792,7 +792,7 @@ const ROLES=["Plateforme","Plateforme ou add-on","Add-on","Veille","Partenariat 
 const STAGES=[{id:"radar",n:"Radar"},{id:"backlog",n:"Backlog"},{id:"envoye",n:"Envoyé"},{id:"secondcall",n:"2e appel"},{id:"pursuit",n:"Démarche"},{id:"acquisition",n:"Acquisition"},{id:"pass",n:"Pass"}];
 const STAGE_N=Object.fromEntries(STAGES.map(s=>[s.id,s.n]));
 const SUIVI=[{id:"secondcall",n:"2e appel",target:20},{id:"pursuit",n:"Démarche",target:10},{id:"acquisition",n:"Acquisition",target:2},{id:"pass",n:"Pass / hors marché",target:null}];
-const VERDICTS=[{n:"Passe",g:"keep"},{n:"Add-on",g:"keep"},{n:"À valider",g:"check"},{n:"Rejet · taille",g:"out"},{n:"Rejet · prix",g:"out"},{n:"Rejet · secteur",g:"out"},{n:"Rejet · géo",g:"out"},{n:"Rejet · B2C",g:"out"},{n:"Rejet · propriété",g:"out"}];
+const VERDICTS=[{n:"Passe",g:"keep"},{n:"Plus petite",g:"keep"},{n:"À valider",g:"check"},{n:"Rejet · taille",g:"out"},{n:"Rejet · prix",g:"out"},{n:"Rejet · secteur",g:"out"},{n:"Rejet · géo",g:"out"},{n:"Rejet · B2C",g:"out"},{n:"Rejet · propriété",g:"out"}];
 const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
 const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
 const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
@@ -990,7 +990,7 @@ function verdictOf(it,sz){
   if(eb&&(eb.lo>c.ebMax||eb.hi<c.addonEbMin))return "Rejet · taille";
   const m=multOf(it,sz);
   if(m!=null&&m>c.multMax)return "Rejet · prix";
-  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<ebFloor(it)))return "Add-on";
+  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<ebFloor(it)))return "Plus petite";
   if(!ca&&!eb)return "À valider";
   if(!it.province||!it.verticale||it.verticale==="À classer")return "À valider";
   return "Passe";
