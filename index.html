@@ -310,22 +310,49 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 .insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:14px}
 .ins{padding:11px 14px;border-radius:9px;border:1.5px dashed var(--rule);background:var(--paper);font-size:12.5px;color:var(--ink);line-height:1.45}
 .ins.keep{border-color:var(--keep)} .ins.check{border-color:var(--check)} .ins.out{border-color:#8D939B}
-.skbox{position:relative;background:var(--paper);border:1px solid var(--rule-soft);border-radius:12px;padding:16px 18px 12px;margin-bottom:16px}
-.sklegend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:10px;font-size:12px;color:var(--ink-2)}
-.sklegend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
-.sklegend .hint{margin-left:auto;color:var(--ink-3);font-size:11.5px}
-.skscroll{overflow-x:auto}
-#sankey svg{display:block}
-.sk-col{font:600 10px var(--f-body);letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3)}
-.sk-lab{font:500 11.5px var(--f-body);fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
-.sk-lab tspan{fill:var(--ink-3);font-variant-numeric:tabular-nums}
-.sk-link{transition:fill-opacity .15s;cursor:default}
-.sk-node{cursor:pointer}
-.sk-node rect{fill:var(--rock);transition:fill .15s}
-.sk-node:hover rect{fill:var(--amber)}
-.sk-node.on rect{fill:var(--amber)}
-.sk-tip{position:absolute;pointer-events:none;background:var(--rock);color:var(--rock-ink);font-size:11.5px;padding:7px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:10}
-.sk-tip b{color:var(--amber-rock)}
+.fs-row{display:grid;grid-template-columns:30px minmax(280px,2.4fr) minmax(260px,1.4fr) minmax(110px,1fr);gap:14px;align-items:center;padding:9px 8px;border-top:1px solid var(--rule-soft);font-size:12px;border-radius:8px}
+.fs-row[data-fk]{cursor:pointer}
+.fs-row[data-fk]:hover,.fs-row.on{background:var(--paper-hover)}
+.fs-row.on{box-shadow:inset 3px 0 0 var(--amber)}
+.fs-row.off .fs-name,.fs-row.off .fs-bar{opacity:.55}
+.fs-n{font:700 13px var(--f-display);color:var(--ink-3);text-align:center}
+.fs-name b{display:block;color:var(--ink);font-size:13px;margin-bottom:1px}
+.fs-name span{color:var(--ink-3);line-height:1.45}
+.fs-num{color:var(--ink-2);font-variant-numeric:tabular-nums;line-height:1.45}
+.fs-num b{color:var(--ink)}
+.fs-num .cut{color:var(--danger);font-weight:600}
+.fs-split{color:var(--ink-3)}
+.gr{color:var(--est)}
+.fs-off{color:var(--ink-3);font-style:italic}
+.fs-bar{height:14px;background:var(--rule-soft);border-radius:4px;overflow:hidden}
+.fs-bar i{display:block;height:100%;background:var(--rock);border-radius:4px}
+.fs-row.end .fs-bar i{background:var(--keep)}
+.fs-row.gris .fs-bar i{background:var(--est)}
+.href{display:inline-block;padding:0 5px;border-radius:4px;background:var(--rule-soft);color:var(--ink-2);font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums;cursor:help}
+.ft{width:100%;border-collapse:collapse;font-size:12px}
+.ft th{position:sticky;top:0;background:var(--paper);text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:6px 8px;border-bottom:1px solid var(--rule)}
+.ft td{padding:7px 8px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink-2);line-height:1.45}
+.ft .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ft .hid{font-weight:700;color:var(--ink);white-space:nowrap}
+.ft .u{color:var(--ink-3);font-size:11px}
+.ft .src{color:var(--ink-3);min-width:240px}
+.ft .imp{min-width:260px}
+.ft.hyp{min-width:1180px}
+.hyp-scroll{max-height:420px;overflow:auto}
+.tier{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700}
+.tier.A{background:var(--amber);color:#fff}
+.tier.B{background:var(--rule-soft);color:var(--ink-2)}
+.rg{color:var(--ink-3);font-size:11px;font-variant-numeric:tabular-nums}
+.hlist{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow:auto}
+.hrow{display:grid;grid-template-columns:34px minmax(220px,1.3fr) 130px 96px minmax(240px,1.6fr);gap:10px;align-items:start;padding:8px 0;border-top:1px solid var(--rock-rule)}
+.hrow .hid{font-weight:700;color:var(--amber-rock);font-size:12px;padding-top:7px}
+.hrow label{font-size:12px;color:var(--rock-ink);line-height:1.4}
+.hrow label small{display:block;color:var(--rock-ink-3);font-size:10.5px}
+.hrow .hv{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--rock-ink-3)}
+.hrow input,.hrow select,.hrow textarea{width:100%;background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:6px 8px;font-size:12px}
+.hrow .hv input{width:64px;text-align:right;font-variant-numeric:tabular-nums}
+.hrow input:disabled{opacity:.55}
+.hrow textarea{min-height:34px;height:34px;resize:vertical;line-height:1.4}
 .focusbar{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:12.5px;color:var(--ink-2)}
 .focusbar b{color:var(--ink)}
 
@@ -366,27 +393,10 @@ input.cell.pvv{color:var(--ver);font-weight:600;background:var(--ver-bg)}
 .st-head>span{font-size:12px;color:var(--ink-3)}
 .st-head .right{margin-left:auto;display:flex;gap:8px}
 .st-head select{padding:6px 8px;border:1px solid var(--rule);border-radius:7px;background:#fff;font-size:12px;color:var(--ink)}
-.st-row{display:grid;grid-template-columns:22px 18px minmax(160px,1fr) minmax(280px,2.2fr) 140px minmax(230px,1.5fr) 82px;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rule-soft)}
-.st-row.off{opacity:.5}
-.st-n{font:700 13px var(--f-display);color:var(--ink-3);text-align:center}
-.st-row input[type=checkbox]{accent-color:var(--amber);width:15px;height:15px}
-.st-row input[type=text],.st-row input.num,.st-row select{padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:#fff;font-size:12px;color:var(--ink);min-width:0}
-.st-row input.num{width:62px;text-align:right;font-variant-numeric:tabular-nums}
-.st-rule{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
-.st-rule .fchip{padding:2px 8px;font-size:11px}
-.st-unk{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
-.st-mode{display:inline-flex;align-items:center;gap:5px;color:var(--ink-3)}
-.st-count{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.st-count b{color:var(--ink)}
-.st-count .cut{color:var(--danger);font-weight:600}
-.st-btns{display:flex;gap:4px;justify-content:flex-end}
-.st-btns button{width:24px;height:24px;border:1px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink-2);font-size:12px;line-height:1;padding:0}
-.st-btns button:hover{border-color:var(--amber)}
 .lots{margin-top:18px}
 .lots table{border-collapse:collapse;width:100%;max-width:860px;background:var(--paper);border-radius:9px;overflow:hidden;font-size:12px;color:var(--ink-2)}
 .lots th,.lots td{text-align:left;padding:7px 12px;border-bottom:1px solid var(--rule-soft)}
 .lots th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
-@media (max-width:1180px){.st-row{grid-template-columns:22px 18px 1fr}.st-row>*:nth-child(n+4){grid-column:3}}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--rock);color:var(--rock-ink);padding:10px 16px;border-radius:9px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:80;max-width:min(560px,90vw)}
 .toast.err{border-left:4px solid var(--danger)}
 
@@ -522,7 +532,7 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
   <!-- ENTONNOIR -->
   <section class="panel" id="panel-entonnoir">
     <div class="ptool">
-      <div class="intro"><b>Le tri brutal.</b> Toutes les cibles du tracker passent dans l'entonnoir, plus les profils importés (REQ, ICRIQ, listes Excel) qui n'y sont pas encore. Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. CA et BAIIA : la valeur vérifiée, sinon l'estimé du tracker (≈), testé sur sa valeur centrale (réglable par étape). Ce qui reste à la fin est ta shortlist.</div>
+      <div class="intro"><b>De la base à la shortlist.</b> L'objectif n'est pas de filtrer des PME : c'est de trouver de quoi bâtir des triptyques (un noyau et deux compléments par verticale) que le fonds peut financer. Les faits durs retirent d'abord ce qui ne peut pas être une cible. La taille se teste sur la valeur centrale; une société n'est rejetée que si toute sa fourchette est hors fenêtre, sinon elle va en zone grise. Le score classe ce qui reste, et un plafond garde ce que tu peux analyser. Estimé en violet (≈), vérifié en vert (✓).</div>
       <div class="right"><button class="btn dark" id="btnUniv">+ Importer des profils</button></div>
     </div>
     <div class="ingest" id="univBox" hidden>
@@ -534,12 +544,9 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
       <div id="univMap" hidden></div>
     </div>
     <div class="insights" id="triIns"></div>
-    <div class="skbox">
-      <div class="sklegend" id="skLegend"></div>
-      <div class="skscroll"><div id="sankey"></div></div>
-      <div class="sk-tip" id="skTip" hidden></div>
-    </div>
     <div class="steps" id="steps"></div>
+    <div class="steps" id="tript"></div>
+    <div class="steps" id="hypBox"></div>
     <div class="focusbar" id="focusbar"></div>
     <div id="triList"></div>
     <div class="lots" id="lots"></div>
@@ -635,37 +642,16 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
 
 <!-- Thèse -->
 <div class="overlay" id="ovThese" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="thTitle" style="max-width:620px">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="thTitle" style="max-width:1040px">
     <form id="thForm">
       <div class="mh">
-        <div><h2 id="thTitle">Thèse et seuils</h2><div class="derived">Les verdicts et les scores se recalculent dès que tu enregistres.</div></div>
+        <div><h2 id="thTitle">Thèse et seuils</h2><div class="derived">Toutes les hypothèses de l'entonnoir. Les verdicts, les scores et la shortlist se recalculent dès que tu enregistres.</div></div>
         <button type="button" class="x" data-close aria-label="Fermer">×</button>
       </div>
-      <fieldset><legend>Cible noyau</legend>
-        <div class="fg">
-          <div class="f"><label for="th-caMin">CA min (M$)</label><input id="th-caMin" inputmode="decimal"></div>
-          <div class="f"><label for="th-caMax">CA max (M$)</label><input id="th-caMax" inputmode="decimal"></div>
-          <div class="f"><label for="th-ebMin">BAIIA min par défaut (M$)</label><input id="th-ebMin" inputmode="decimal"></div>
-          <div class="f"><label for="th-ebMax">BAIIA max (M$)</label><input id="th-ebMax" inputmode="decimal"></div>
-        </div>
-      </fieldset>
-      <fieldset><legend>Plancher de BAIIA du noyau, par verticale (M$)</legend>
-        <div class="fg" id="thVert"></div>
-        <p class="note">Le BAIIA min par défaut s'applique aux cibles à classer. Le BAIIA estimé est une fourchette large (CA bas × marge basse jusqu'à CA haut × marge haute) : une cible est gardée tant que le haut de sa fourchette atteint le plancher.</p>
-      </fieldset>
-      <fieldset><legend>Add-on et prix</legend>
-        <div class="fg">
-          <div class="f"><label for="th-addonCaMin">CA plancher add-on</label><input id="th-addonCaMin" inputmode="decimal"></div>
-          <div class="f"><label for="th-addonEbMin">BAIIA plancher add-on</label><input id="th-addonEbMin" inputmode="decimal"></div>
-          <div class="f"><label for="th-multMax">Multiple max (x BAIIA)</label><input id="th-multMax" inputmode="decimal"></div>
-        </div>
-        <p class="note">Sous le noyau mais au-dessus du plancher : verdict « Add-on ». Sous le plancher : « Rejet · taille ».</p>
-      </fieldset>
-      <fieldset><legend>Géographie</legend>
-        <div class="fg" id="thProv"></div>
-      </fieldset>
+      <p class="note" style="margin:0 0 10px">Une ligne par hypothèse : sa valeur, sa confiance et sa source. Le numéro (H1, H2…) est celui que citent les étapes de l'entonnoir.</p>
+      <div class="hlist" id="thList"></div>
       <div class="mf">
-        <button type="button" class="btn" id="thDefault">Revenir aux seuils par défaut</button>
+        <button type="button" class="btn" id="thDefault">Revenir aux valeurs par défaut</button>
         <div class="right"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn go">Enregistrer</button></div>
       </div>
     </form>
@@ -766,11 +752,11 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
 <script>
 "use strict";
 /* ---------- listes fermées ---------- */
-const VERTICALES=["ÉNER","AGRO","SV","Défense","Services B2B","Hors thèse","À classer"];
+const VERTICALES=["ÉNER","AGRO","SV","Défense","Services B2B","Manuf. niche","Hors thèse","À classer"];
 /* Libellés affichés : les valeurs enregistrées restent les codes ci-dessus. */
-const VLAB={"ÉNER":"Énergie et bâtiment","AGRO":"Agroalimentaire","SV":"Sciences de la vie","Défense":"Défense et aérospatiale","Services B2B":"Services techniques B2B","Hors thèse":"Hors thèse","À classer":"À classer"};
+const VLAB={"ÉNER":"Énergie et bâtiment","AGRO":"Agroalimentaire","SV":"Sciences de la vie","Défense":"Défense et aérospatiale","Services B2B":"Services techniques B2B","Manuf. niche":"Manufacturier de niche","Hors thèse":"Hors thèse","À classer":"À classer"};
 const vlab=v=>VLAB[v]||v||"";
-const THESE_VERTS=["ÉNER","AGRO","SV","Défense","Services B2B"];
+const THESE_VERTS=["ÉNER","AGRO","SV","Défense","Services B2B","Manuf. niche"];
 const CANAUX=[{n:"Index Repreneuriat",t:"A"},{n:"Courtier / F&A",t:"A"},{n:"Annonce en ligne",t:"A"},{n:"Processus avorté",t:"B"},{n:"Réseau / référé",t:"C"},{n:"REQ",t:"C"},{n:"ICRIQ",t:"C"},{n:"Orbis",t:"C"},{n:"Recherche publique",t:"C"}];
 const CANAL_NAMES=CANAUX.map(c=>c.n);
 const CANAL_TIER=Object.fromEntries(CANAUX.map(c=>[c.n,c.t]));
@@ -780,7 +766,7 @@ const RAISONS=["Retraite","Relève absente","Santé / décès","Diversification"
 const TRANSACTIONS=["100 % actions","Majoritaire","Actifs","Minoritaire"];
 const MIX=["B2B","B2B dominant","Mixte","B2C dominant"];
 const RECUR=["Oui","Potentielle","Non"];
-const EXCLUSIONS=["Propriété institutionnelle","Stratégique / déjà acquise","Faillite / fermée","Hors taille (jugement)","Hors thèse (jugement)"];
+const EXCLUSIONS=["Propriété institutionnelle","Stratégique / déjà acquise","Déjà en discussion","Faillite / fermée","Hors taille (jugement)","Hors thèse (jugement)"];
 const FITS=["Fit fort","Fit modéré","Fit faible","À évaluer"];
 const PRIORITES=["A","B","C"];
 const ROLES=["Plateforme","Plateforme ou add-on","Add-on","Veille","Partenariat / carve-out"];
@@ -792,9 +778,16 @@ const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
 const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
 const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
 /* Plancher de BAIIA du noyau par verticale (modifiable dans « Thèse et seuils »). */
-const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,ebMinV:{"ÉNER":3,"AGRO":2.5,"SV":2,"Défense":2,"Services B2B":2},addonCaMin:5,addonEbMin:0.5,multMax:7,provinces:["QC","ON"]};
+const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,ebMinV:{"ÉNER":3,"AGRO":2.5,"SV":2,"Défense":2,"Services B2B":2,"Manuf. niche":2},addonCaMin:5,addonEbMin:0.5,multMax:7,veMax:35,
+  margeAgro:7,rpeAdj:100,releveFond:55,releveEnt:30,provinces:["QC","ON"],verts:THESE_VERTS.slice(),
+  vertPts:{"ÉNER":15,"AGRO":15,"SV":15,"Défense":8,"Services B2B":8,"Manuf. niche":0},ptsBas:5,ptsCompl:12,cap:50,capA:15,hyp:{}};
 let CFG={...DEFAULT_CFG};
 function ebFloor(it){const m=CFG.ebMinV||{},v=m[it&&it.verticale];return Number.isFinite(v)?v:CFG.ebMin;}
+function vertsOn(){return Array.isArray(CFG.verts)?CFG.verts:THESE_VERTS;}
+/* Marge centrale : pour l'agroalimentaire, la marge de référence de la thèse remplace celle de Statistique Canada (7,5 %); l'écart de la sous-industrie est conservé. */
+const AGRO_REF=7.5;
+function margeC(b){const a=Number(CFG.margeAgro);return b.v==="AGRO"&&Number.isFinite(a)?Math.max(0,b.m[1]+a-AGRO_REF):b.m[1];}
+function rpeOf(b,prov){const a=Number(CFG.rpeAdj);return (prov==="ON"?b.on:b.qc)*(Number.isFinite(a)&&a>0?a/100:1);}
 function floorsTxt(c){const m=c.ebMinV||{};return THESE_VERTS.map(v=>`${vlab(v)} ${String(Number.isFinite(m[v])?m[v]:c.ebMin).replace(".",",")}`).join(", ");}
 const YEAR=new Date().getFullYear();
 
@@ -869,8 +862,8 @@ const BENCH_CALIB=[
   "Sortie vers un stratégique : SPX a payé 605 M$ CA pour Neptronic (juillet 2026). Un commentaire de marché, non vérifié, place le multiple un peu au-dessus de 12x le BAIIA.",
 ];
 let BENCH=DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
-const PROV_KEYS=["employes","ca","baiia","fondation","ageFond","prix"];
-const PROV_LAB={employes:"Employés",ca:"CA (M$)",baiia:"BAIIA (M$)",fondation:"Fondation",ageFond:"Âge du fondateur",prix:"Prix demandé (M$)"};
+const PROV_KEYS=["verticale","employes","ca","baiia","fondation","ageFond","prix"];
+const PROV_LAB={verticale:"Verticale",employes:"Employés",ca:"CA (M$)",baiia:"BAIIA (M$)",fondation:"Fondation",ageFond:"Âge du fondateur",prix:"Prix demandé (M$)"};
 function validBench(b){
   const n3=a=>Array.isArray(a)&&a.length===3&&a.every(x=>Number.isFinite(+x));
   return b&&typeof b.id==="string"&&ID_RE.test(b.id)&&Number.isFinite(+b.qc)&&+b.qc>0&&Number.isFinite(+b.on)&&+b.on>0&&n3(b.m)&&n3(b.x);
@@ -923,7 +916,7 @@ function sizeOf(it){
   if(caIn&&pvOf(it,"ca")==="verifie")out.ca={...caIn,p:"v",how:"saisi"};
   else{
     const c=[];
-    if(emp&&b){const rpe=(it.province==="ON"?b.on:b.qc)/1000;c.push({lo:emp.lo*rpe*(1-BENCH_DISP),hi:emp.hi*rpe*(1+BENCH_DISP),mid:emp.mid*rpe,how:"emp"});}
+    if(emp&&b){const rpe=rpeOf(b,it.province)/1000;c.push({lo:emp.lo*rpe*(1-BENCH_DISP),hi:emp.hi*rpe*(1+BENCH_DISP),mid:emp.mid*rpe,how:"emp"});}
     if(caIn)c.push({...caIn,how:"pipe"});
     if(c.length){
       const mids=c.map(x=>x.mid);
@@ -933,7 +926,7 @@ function sizeOf(it){
   const ebIn=rng(it.baiia);
   if(ebIn)out.eb={...ebIn,p:pvOf(it,"baiia")==="verifie"?"v":"e",how:"saisi"};
   /* Fourchette large : CA bas × marge basse jusqu'à CA haut × marge haute, pour ne rien perdre; la valeur centrale garde la marge centrale. */
-  else if(out.ca&&b){out.eb={lo:out.ca.lo*b.m[0]/100,hi:out.ca.hi*b.m[2]/100,mid:out.ca.mid*b.m[1]/100,p:"e",how:"marge"};}
+  else if(out.ca&&b){const mc=margeC(b);out.eb={lo:out.ca.lo*Math.min(b.m[0],mc)/100,hi:out.ca.hi*Math.max(b.m[2],mc)/100,mid:out.ca.mid*mc/100,p:"e",how:"marge"};}
   if(out.eb&&b&&out.eb.mid>0)out.ve={lo:out.eb.mid*b.x[0],hi:out.eb.mid*b.x[2],mid:out.eb.mid*b.x[1],p:"e"};
   return out;
 }
@@ -945,12 +938,12 @@ function sizeTitle(it,sz,k){
   const src=key=>it.src&&it.src[key]?" · Source : "+it.src[key]:"";
   if(k==="ca"){
     if(s.p==="v")return `Vérifié : ${it.ca} M$${src("ca")}`;
-    const parts=(s.parts||[]).map(x=>x.how==="emp"?`${it.employes} employés × ${it.province==="ON"?b.on:b.qc} k$ par employé (${b.label}, ${it.province==="ON"?"Ontario":"Québec"} 2024, ±${Math.round(BENCH_DISP*100)} %) = ${fmtM(x.mid)} M$`:`CA du pipeline ${it.ca} M$${src("ca")}`);
+    const parts=(s.parts||[]).map(x=>x.how==="emp"?`${it.employes} employés × ${fmtM(rpeOf(b,it.province))} k$ par employé (${b.label}, ${it.province==="ON"?"Ontario":"Québec"} 2024, ±${Math.round(BENCH_DISP*100)} %) = ${fmtM(x.mid)} M$`:`CA du pipeline ${it.ca} M$${src("ca")}`);
     return `Estimé ${rg}. ${parts.join(" · ")}${parts.length>1?" · moyenne des deux":""}${s.gap>2?". Écart de plus de 2x entre les sources : à vérifier en priorité":""}.`;
   }
   if(k==="eb"){
     if(s.how==="saisi")return `${s.p==="v"?"Vérifié":"Estimé (saisi)"} : ${it.baiia} M$${src("baiia")}`;
-    return `Estimé ${rg}. Centre : CA central × marge de ${dec(b.m[1])} %. Fourchette : CA bas × ${dec(b.m[0])} % jusqu'à CA haut × ${dec(b.m[2])} % (${b.label}).`;
+    return `Estimé ${rg}. Centre : CA central × marge de ${dec(margeC(b))} %. Fourchette : CA bas × ${dec(Math.min(b.m[0],margeC(b)))} % jusqu'à CA haut × ${dec(Math.max(b.m[2],margeC(b)))} % (${b.label}).`;
   }
   if(k==="ve")return `Estimé ${rg}. BAIIA central de ${fmtM(sz.eb.mid)} M$ × multiple de ${dec(b.x[1])}x (${dec(b.x[0])} à ${dec(b.x[2])}x, ${b.label}).`;
   return "";
@@ -963,7 +956,7 @@ function multOf(it,sz){const p=num(it.prix),eb=sz?sz.eb:rng(it.baiia);if(p==null
 function ageOf(it){const f=num(it.fondation);return f&&f>1800&&f<=YEAR?YEAR-f:null;}
 function verdictOf(it,sz){
   const c=CFG,ex=it.exclusion||"";
-  if(ex==="Faillite / fermée"||ex==="Stratégique / déjà acquise"||ex==="Propriété institutionnelle")return "Rejet · propriété";
+  if(ex==="Faillite / fermée"||ex==="Stratégique / déjà acquise"||ex==="Déjà en discussion"||ex==="Propriété institutionnelle")return "Rejet · propriété";
   if(ex==="Hors taille (jugement)")return "Rejet · taille";
   if(ex==="Hors thèse (jugement)"||it.verticale==="Hors thèse")return "Rejet · secteur";
   if(it.province&&!c.provinces.includes(it.province))return "Rejet · géo";
@@ -989,37 +982,55 @@ function completOf(it){
   return n/COMPLETE_KEYS.length;
 }
 function joursOf(it){if(!it.dateAdded)return null;const d=(Date.now()-new Date(it.dateAdded+"T00:00:00").getTime())/864e5;return Number.isFinite(d)?Math.max(0,Math.floor(d)):null;}
-function scoreOf(it,v,sz){
-  const age=ageOf(it);
-  const caR=sz?sz.ca:rng(it.ca),ebR=sz?sz.eb:rng(it.baiia);
-  let succ=age==null?10:age>=40?35:age>=30?28:age>=20?15:3;
+/* Signal de relève : l'âge du fondateur quand il est connu; à défaut, l'âge de l'entreprise comme indice (≈). */
+function releveOf(it){
+  const af=num(it.ageFond),age=ageOf(it),F=Number(CFG.releveFond)||55,E=Number(CFG.releveEnt)||30;
+  if(["Retraite","Relève absente","Santé / décès"].includes(it.raison))return {pts:35,ok:true,p:"e",txt:"Raison de vente : "+it.raison.toLowerCase()};
+  if(af!=null&&af>0)return {pts:af>=F+10?35:af>=F?28:af>=F-5?15:3,ok:af>=F,p:pvOf(it,"ageFond")==="verifie"?"v":"e",txt:"Fondateur "+af+" ans"};
+  if(age!=null)return {pts:age>=E+10?35:age>=E?28:age>=E-10?15:3,ok:age>=E,p:"e",txt:"Entreprise de "+age+" ans"};
+  return {pts:10,ok:null,p:"",txt:"Âge inconnu"};
+}
+/* Place dans l'entonnoir. z : « rejet » (st = étape qui la retire), « grise » ou « passe » (avec son rôle dans un triptyque). */
+function funnelOf(it,sz){
+  const c=CFG,M=x=>fmtM(x)+" M$";
+  if(it.exclusion)return {z:"rejet",st:"excl",why:"Exclue : "+it.exclusion.toLowerCase()};
+  const v=it.verticale||"À classer";
+  if(v==="À classer")return {z:"grise",why:"Verticale à classer"};
+  if(!vertsOn().includes(v))return {z:"rejet",st:"vert",why:"Verticale non retenue : "+vlab(v)};
+  if(!it.province)return {z:"grise",why:"Province inconnue"};
+  if(!(c.provinces||[]).includes(it.province))return {z:"rejet",st:"geo",why:"Hors "+(c.provinces||[]).join(" + ")};
+  const ca=sz.ca,eb=sz.eb,ve=sz.ve;
+  if(!ca||!eb)return {z:"grise",why:"Taille inconnue : ni employés, ni CA"};
+  if(ca.hi<c.addonCaMin)return {z:"rejet",st:"taille",why:`Trop petite : CA d'au plus ${M(ca.hi)}, sous ${M(c.addonCaMin)}`};
+  if(ca.lo>c.caMax)return {z:"rejet",st:"taille",why:`Trop grande : CA d'au moins ${M(ca.lo)}, au-dessus de ${M(c.caMax)}`};
+  if(eb.hi<c.addonEbMin)return {z:"rejet",st:"taille",why:`Trop petite : BAIIA d'au plus ${M(eb.hi)}, sous ${M(c.addonEbMin)}`};
+  if(eb.lo>c.ebMax)return {z:"rejet",st:"taille",why:`Trop grande : BAIIA d'au moins ${M(eb.lo)}, au-dessus de ${M(c.ebMax)}`};
+  if(ve&&ve.lo>c.veMax)return {z:"rejet",st:"taille",why:`Hors budget : valeur d'au moins ${M(ve.lo)}, au-dessus de ${M(c.veMax)}`};
+  const g=(lab,s,lo,hi)=>s.mid<lo?`${lab} central ≈ ${M(s.mid)}, sous ${M(lo)}, mais la fourchette monte à ${M(s.hi)}`:s.mid>hi?`${lab} central ≈ ${M(s.mid)}, au-dessus de ${M(hi)}, mais la fourchette descend à ${M(s.lo)}`:"";
+  const gw=g("CA",ca,c.addonCaMin,c.caMax)||g("BAIIA",eb,c.addonEbMin,c.ebMax)||(ve&&ve.mid>c.veMax?`Valeur centrale ≈ ${M(ve.mid)}, au-dessus de ${M(c.veMax)}, mais la fourchette descend à ${M(ve.lo)}`:"");
+  if(gw)return {z:"grise",why:gw};
   const af=num(it.ageFond);
-  if(af!=null&&af>0)succ=af>=65?35:af>=58?28:af>=50?15:3;
-  if(["Retraite","Relève absente","Santé / décès"].includes(it.raison))succ=35;
-  let taille;
-  if(v==="Passe"){
-    const ca=caR,eb=ebR;
-    const lowHalf=(eb?eb.mid<=(ebFloor(it)+CFG.ebMax)/2:true)&&(ca?ca.mid<=(CFG.caMin+CFG.caMax)/2:true);
-    taille=lowHalf?25:20;
-  }else if(v==="Add-on")taille=12;
-  else if(v==="À valider")taille=8;
-  else if(v==="Rejet · taille"||v==="Rejet · prix")taille=0;
-  else taille=(caR||ebR)?15:8;
-  const fit={"Fit fort":20,"Fit modéré":12,"Fit faible":4}[it.fit];
-  const fitP=fit==null?8:fit;
-  const bridgeOk=!!it.bridge&&!/^(aucun|pas de|sans objet|non)/i.test(String(it.bridge).trim());
-  const rec={Oui:5,Potentielle:4,Non:0}[it.recurrence];
-  const lev=(bridgeOk?5:0)+(rec==null?2:rec);
-  const data=Math.round(completOf(it)*10);
-  return {total:Math.min(100,succ+taille+fitP+lev+data),parts:{succ,taille,fit:fitP,lev,data}};
+  if(af!=null&&af>0&&af<(Number(c.releveFond)||55))return {z:"rejet",st:"releve",why:`Fondateur de ${af} ans, sous ${c.releveFond} ans`};
+  const fl=ebFloor(it),core=ca.mid>=c.caMin&&eb.mid>=fl;
+  return {z:"passe",role:core?"Noyau":"Complément",bas:core&&ca.mid<=(c.caMin+c.caMax)/2&&eb.mid<=(fl+c.ebMax)/2};
+}
+/* Score sur 100 : relève 35, taille 25, verticale 15, fit 15, fiabilité des chiffres 10. */
+function scoreOf(it,f,rel,sz){
+  const c=CFG,n=(v,d)=>Number.isFinite(Number(v))?Number(v):d;
+  const taille=f.z==="passe"?(f.role==="Noyau"?20+(f.bas?n(c.ptsBas,5):0):n(c.ptsCompl,12)):f.z==="grise"?6:0;
+  const vp=c.vertPts||{},vert=Math.max(0,Math.min(15,n(vp[it.verticale],n(DEFAULT_CFG.vertPts[it.verticale],0))));
+  const fit={"Fit fort":15,"Fit modéré":10,"Fit faible":2}[it.fit];
+  const fitP=fit==null?6:fit;
+  const ca=sz.ca,fiab=!ca?0:ca.p==="v"?10:(ca.parts||[]).length>1?(ca.gap>2?0:7):4;
+  return {total:Math.min(100,rel.pts+Math.min(25,taille)+vert+fitP+fiab),parts:{succ:rel.pts,taille:Math.min(25,taille),vert,fit:fitP,fiab}};
 }
 let DER=new Map();
 function D(it){
   let d=DER.get(it.id);
   if(d)return d;
   const sz=sizeOf(it);
-  const v=verdictOf(it,sz),s=scoreOf(it,v,sz);
-  d={verdict:v,group:VERDICT_G[v],score:s.total,parts:s.parts,age:ageOf(it),tier:CANAL_TIER[it.canal]||"",mult:multOf(it,sz),sz,complet:completOf(it),jours:joursOf(it)};
+  const v=verdictOf(it,sz),f=funnelOf(it,sz),rel=releveOf(it),s=scoreOf(it,f,rel,sz);
+  d={verdict:v,group:VERDICT_G[v],score:s.total,parts:s.parts,age:ageOf(it),tier:CANAL_TIER[it.canal]||"",mult:multOf(it,sz),sz,f,rel,complet:completOf(it),jours:joursOf(it)};
   DER.set(it.id,d);
   return d;
 }
@@ -1171,7 +1182,7 @@ async function writeMany(list,label){
 }
 /* ---------- base de données : Supabase ----------
    Une seule table « docs » (collection, id, data jsonb) qui reproduit les collections du tracker :
-   cibles/<id>, univers/<lot>, config/tri, config/these, config/benchmarks. Schéma et règles d'accès : supabase.sql.
+   cibles/<id>, univers/<lot>, config/these, config/benchmarks. Schéma et règles d'accès : supabase.sql.
    La clé publishable est publique par conception : ce sont les règles RLS (membres connectés seulement) qui protègent les données. */
 const SB_URL="https://cavcxktxltxksxzpauzi.supabase.co";   // Supabase → Project Settings → Data API → Project URL
 const SB_KEY="sb_publishable_Cf6wxZ0PTG-twGppTR1dFA_Uq24c_bu";               // Supabase → Project Settings → API Keys → publishable key (sb_publishable_…)
@@ -1321,11 +1332,6 @@ async function startDb(session){
     const m=new Map();snap.docs.forEach(d=>{const x=d.data();if(x)m.set(d.id,x);});
     UNIV=m;UROWS=[];
     [...m.entries()].sort((a,b)=>String(a[1].date||"").localeCompare(String(b[1].date||""))||a[0].localeCompare(b[0])).forEach(([id,doc])=>(doc.rows||[]).forEach((r,i)=>UROWS.push({...r,_id:id+":"+i,_lot:doc.label||doc.batch||id})));
-    renderSoon();
-  },()=>{});
-  db.doc("config/tri").onSnapshot(s=>{
-    const st=s.exists&&s.data().steps;
-    TRI={steps:Array.isArray(st)&&st.length?st.map(x=>({...x})):DEFAULT_STEPS.map(x=>({...x}))};
     renderSoon();
   },()=>{});
   db.doc("config/these").onSnapshot(s=>{
@@ -1500,7 +1506,7 @@ function optHTML(c,v){
   return (has?"":`<option selected>${esc(v)}</option>`)+opts.map(o=>`<option value="${esc(o)}"${o===(v||"")?" selected":""}>${o?esc(c.lab?c.lab(o):o):"—"}</option>`).join("");
 }
 function vchip(d){const g=GROUPS.find(x=>x.id===d.group);return `<span class="vchip ${d.group}"><i aria-hidden="true">${g.icon}</i>${esc(d.verdict)}</span>`;}
-function scoreTitle(d){const p=d.parts;return `Succession ${p.succ}/35 · Taille ${p.taille}/25 · Fit ${p.fit}/20 · Leviers ${p.lev}/10 · Données ${p.data}/10`;}
+function scoreTitle(d){const p=d.parts;return `Relève ${p.succ}/35 · Taille ${p.taille}/25 · Verticale ${p.vert}/15 · Fit ${p.fit}/15 · Fiabilité ${p.fiab}/10`;}
 function cellHTML(key,col,k,it,d,left){
   const id=esc(it.id),st=left!=null?` style="left:${left}px"`:"";
   switch(col.kind){
@@ -1626,339 +1632,239 @@ function ticketHTML(it,mode){
   return h+`</article>`;
 }
 
-/* ---------- Univers et tri brutal ---------- */
-const TRI_FIELDS={
-  verticale:{label:"Verticale",kind:"set",opts:VERTICALES.filter(v=>v!=="À classer"),def:"Hors secteur"},
-  province:{label:"Province",kind:"set",opts:PROVINCES,def:"Hors géographie"},
-  dispo:{label:"Propriété disponible",kind:"flag",def:"Exclue ou non disponible"},
-  fit:{label:"Fit avec la thèse",kind:"set",opts:["Fit fort","Fit modéré","Fit faible"],defv:["Fit fort","Fit modéré"],def:"Fit faible"},
-  mix:{label:"Clientèle",kind:"set",opts:MIX,defv:["B2B","B2B dominant","Mixte"],def:"B2C dominant"},
-  transaction:{label:"Transaction possible",kind:"set",opts:TRANSACTIONS,defv:["100 % actions","Majoritaire","Actifs"],def:"Pas de contrôle possible"},
-  recurrence:{label:"Revenus récurrents",kind:"set",opts:RECUR,defv:["Oui","Potentielle"],def:"Peu de récurrence"},
-  ageEnt:{label:"Âge de l'entreprise",unit:"ans",def:"Entreprise trop jeune"},
-  releve:{label:"Signal de relève",kind:"releve",def:"Pas de signal de relève"},
-  ageFond:{label:"Âge du fondateur",unit:"ans",def:"Fondateur trop jeune"},
-  employes:{label:"Employés",unit:"",def:"Trop petite"},
-  ca:{label:"CA",unit:"M$",def:"CA hors fourchette"},
-  baiia:{label:"BAIIA",unit:"M$",def:"BAIIA hors fourchette"},
-  ve:{label:"Valeur d'entreprise",unit:"M$",def:"Hors budget du fonds"},
-  multiple:{label:"Multiple prix / BAIIA",unit:"x",def:"Trop chère"},
-  prix:{label:"Prix demandé",unit:"M$",def:"Prix hors budget"},
-};
-/* Entonnoir par défaut, calqué sur la thèse : decks LP (CA 20-35 M$, BAIIA 2-5 M$, 5-7x, contrôle, relève),
-   playbooks par verticale, triptyque (noyau + add-ons) et budget du fonds. Les étapes sans aucune donnée
-   (fit évalué sur ~7 % des fiches, clientèle, transaction, récurrence, prix) sont prêtes mais décochées : elles ne retireraient rien. */
-const DEFAULT_STEPS=[
-  {field:"verticale",label:"Hors secteur",values:["ÉNER","AGRO","SV","Défense","Services B2B"],unknown:"keep",on:true},
-  {field:"province",label:"Hors géographie",values:["QC","ON"],unknown:"keep",on:true},
-  {field:"dispo",label:"Exclue ou non disponible",unknown:"keep",on:true},
-  {field:"releve",label:"Pas de signal de relève",min:55,ent:30,unknown:"keep",on:true},
-  {field:"employes",label:"Trop petite",min:20,max:null,unknown:"keep",mode:"mid",on:true},
-  {field:"ca",label:"CA hors fourchette",min:5,max:35,unknown:"keep",mode:"mid",on:true},
-  {field:"baiia",label:"BAIIA hors fourchette",min:0.5,max:5,unknown:"keep",mode:"mid",on:true},
-  /* Décochées : redondantes avec les données actuelles (âge : couvert par la relève tant qu'aucun âge de fondateur
-     n'est connu; VE : estimée à partir du BAIIA, donc déjà bornée par lui sans prix réel) ou sans aucune donnée. */
-  {field:"ageEnt",label:"Entreprise trop jeune",min:20,max:null,unknown:"keep",on:false},
-  {field:"ve",label:"Hors budget du fonds",min:null,max:35,unknown:"keep",mode:"mid",on:false},
-  {field:"fit",label:"Fit faible",values:["Fit fort","Fit modéré"],unknown:"keep",on:false},
-  {field:"mix",label:"B2C dominant",values:["B2B","B2B dominant","Mixte"],unknown:"keep",on:false},
-  {field:"transaction",label:"Pas de contrôle possible",values:["100 % actions","Majoritaire","Actifs"],unknown:"keep",on:false},
-  {field:"recurrence",label:"Peu de récurrence",values:["Oui","Potentielle"],unknown:"keep",on:false},
-  {field:"multiple",label:"Trop chère",min:null,max:7,unknown:"keep",on:false},
+/* ---------- Base complète et entonnoir ---------- */
+/* ---------- entonnoir : de la base complète à la shortlist ----------
+   Objectif : trouver de quoi bâtir des triptyques (1 noyau + 2 compléments par verticale) finançables par le fonds.
+   1. Faits durs : exclusions, verticale, géographie.
+   2. Taille, testée sur la valeur centrale. On ne rejette que si toute la fourchette est hors fenêtre;
+      une fourchette qui chevauche la fenêtre avec un centre dehors va en zone grise (ni shortlist, ni rejet).
+   3. Signal de relève : ne coupe que sur un âge de fondateur connu; l'âge de l'entreprise n'est qu'un indice, dans le score.
+   4. Score, puis plafond « capacité d'analyse » : les mieux classées forment la shortlist (A, puis B), le reste est en réserve. */
+const HYP=[
+  {k:"cap",n:"Taille de la shortlist (capacité d'analyse)",u:"sociétés",st:"4 · Score et plafond",note:"Fixe la taille de la shortlist : c'est le bassin des appels de scouting.",src:"Mandat : 50 appels de scouting.",conf:"Élevée"},
+  {k:"capA",n:"Groupe A : premiers appels",u:"sociétés",alt:10,st:"4 · Score et plafond",src:"Hypothèse de travail.",conf:"Moyenne"},
+  {k:"caMin",n:"CA minimum d'un noyau",u:"M$",alt:18,st:"2 · Taille",src:"Thèse du fonds.",conf:"Élevée"},
+  {k:"caMax",n:"CA maximum",u:"M$",alt:40,st:"2 · Taille",src:"Thèse du fonds.",conf:"Élevée"},
+  {k:"ebMax",n:"BAIIA maximum",u:"M$",alt:7,st:"2 · Taille",src:"Thèse du fonds.",conf:"Élevée"},
+  {k:"ebMinV.ÉNER",n:"Plancher de BAIIA du noyau : énergie et bâtiment",u:"M$",alt:2,st:"2 · Taille",src:"Thèse de la verticale.",conf:"Élevée"},
+  {k:"ebMinV.AGRO",n:"Plancher de BAIIA du noyau : agroalimentaire",u:"M$",alt:2,st:"2 · Taille",src:"Thèse de la verticale.",conf:"Élevée"},
+  {k:"ebMinV.SV",n:"Plancher de BAIIA du noyau : sciences de la vie",u:"M$",alt:1.5,st:"2 · Taille",src:"Thèse de la verticale.",conf:"Élevée"},
+  {k:"ebMinV.Défense",n:"Plancher de BAIIA du noyau : défense et aérospatiale",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
+  {k:"ebMinV.Services B2B",n:"Plancher de BAIIA du noyau : services techniques B2B",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
+  {k:"ebMinV.Manuf. niche",n:"Plancher de BAIIA du noyau : manufacturier de niche",u:"M$",alt:1.5,st:"2 · Taille",src:"Aucune thèse propre : plancher général du fonds.",conf:"Faible"},
+  {k:"addonCaMin",n:"CA minimum d'un complément",u:"M$",alt:10,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
+  {k:"addonEbMin",n:"BAIIA minimum d'un complément",u:"M$",alt:1,st:"2 · Taille",src:"Hypothèse de travail, à valider.",conf:"Faible"},
+  {k:"veMax",n:"Valeur d'entreprise maximale finançable",u:"M$",alt:15,st:"2 · Taille",src:"BAIIA maximum × multiple maximum. À resserrer selon l'équité disponible par cible.",conf:"Faible"},
+  {k:"margeAgro",n:"Marge de BAIIA de référence, transformation agroalimentaire",u:"%",alt:7.5,st:"2 · Taille",src:"Chiffre de la direction. Statistique Canada donne 7,5 % (33-10-0500-01, 2022-2024). Les écarts par sous-industrie s'y ajoutent.",conf:"Moyenne"},
+  {k:"rpeAdj",n:"Revenu par employé d'une PME, en % de la moyenne de son industrie",u:"%",alt:80,st:"2 · Taille",src:"Statistique Canada 2024 (16-10-0117-01 ÷ 14-10-0202-01). Les moyennes incluent les grandes usines : une PME peut être plus bas.",conf:"Moyenne"},
+  {k:"disp",n:"Dispersion du revenu par employé autour de la moyenne (±)",u:"%",alt:40,st:"2 · Taille",src:"Hypothèse de travail : fourchettes larges pour ne perdre aucune cible. Se modifie dans « Hypothèses par industrie ».",conf:"Moyenne",ro:true},
+  {k:"prov.ON",n:"Ontario incluse (1 = oui, 0 = non)",u:"",alt:0,bool:true,st:"1 · Géographie",src:"Thèse du fonds : Québec d'abord, corridor Québec-Ontario.",conf:"Moyenne"},
+  {k:"vert.Défense",n:"Défense et aérospatiale retenue (1 = oui, 0 = non)",u:"",alt:0,bool:true,st:"1 · Verticale",src:"Verticale sans thèse propre.",conf:"Faible"},
+  {k:"vert.Services B2B",n:"Services techniques B2B retenus (1 = oui, 0 = non)",u:"",alt:0,bool:true,st:"1 · Verticale",src:"Verticale sans thèse propre.",conf:"Faible"},
+  {k:"vert.Manuf. niche",n:"Manufacturier de niche retenu (1 = oui, 0 = non)",u:"",alt:0,bool:true,st:"1 · Verticale",src:"Verticale sans thèse propre. Rattachement par SCIAN, estimé.",conf:"Faible"},
+  {k:"vertPts.ÉNER",g:"vp",n:"Priorité de la verticale : énergie et bâtiment",u:"pts / 15",alt:0,st:"4 · Score et plafond",src:"Hypothèse de travail : les verticales qui ont une thèse passent d'abord.",conf:"Moyenne"},
+  {k:"vertPts.AGRO",g:"vp",n:"Priorité de la verticale : agroalimentaire",u:"pts / 15",alt:0,st:"4 · Score et plafond",src:"Hypothèse de travail : les verticales qui ont une thèse passent d'abord.",conf:"Moyenne"},
+  {k:"vertPts.SV",g:"vp",n:"Priorité de la verticale : sciences de la vie",u:"pts / 15",alt:0,st:"4 · Score et plafond",src:"Hypothèse de travail : les verticales qui ont une thèse passent d'abord.",conf:"Moyenne"},
+  {k:"vertPts.Défense",g:"vp",n:"Priorité de la verticale : défense et aérospatiale",u:"pts / 15",alt:15,st:"4 · Score et plafond",src:"Hypothèse de travail : sans thèse propre, elle passe après.",conf:"Faible"},
+  {k:"vertPts.Services B2B",g:"vp",n:"Priorité de la verticale : services techniques B2B",u:"pts / 15",alt:15,st:"4 · Score et plafond",src:"Hypothèse de travail : sans thèse propre, elle passe après.",conf:"Faible"},
+  {k:"vertPts.Manuf. niche",g:"vp",n:"Priorité de la verticale : manufacturier de niche",u:"pts / 15",alt:15,st:"4 · Score et plafond",src:"Hypothèse de travail : sans thèse propre, elle passe après.",conf:"Faible"},
+  {k:"releveEnt",n:"Indice de relève : âge de l'entreprise à partir duquel on présume un fondateur proche de la sortie",u:"ans",alt:15,st:"3 · Relève (score)",src:"Hypothèse de travail : l'âge de l'entreprise remplace l'âge du fondateur, inconnu. Barème : 35 pts à ce seuil + 10 ans, 28 au seuil, 15 à ce seuil − 10 ans, 3 en dessous, 10 si l'âge est inconnu.",conf:"Faible"},
+  {k:"releveFond",n:"Signal de relève : âge minimum du fondateur",u:"ans",alt:60,st:"3 · Relève",src:"Thèse du fonds : dirigeant de 55 ans et plus.",conf:"Élevée"},
+  {k:"ptsBas",n:"Prime au noyau du bas de la fourchette (plus facile à financer)",u:"pts",alt:0,st:"4 · Score et plafond",src:"Hypothèse de travail : l'équité par cible finance mieux le bas de la fourchette. Un noyau vaut 20 pts, plus cette prime.",conf:"Moyenne"},
+  {k:"ptsCompl",n:"Points de taille d'un complément (un noyau en vaut 20)",u:"pts",alt:20,st:"4 · Score et plafond",src:"Hypothèse de travail : on cherche d'abord les noyaux.",conf:"Moyenne"},
+  {k:"multMax",n:"Multiple maximum payé (prix ÷ BAIIA)",u:"x",st:"Inactive : aucun prix connu",src:"Thèse du fonds : 5 à 7x.",conf:"Élevée"},
+  {k:"ebMin",n:"Plancher de BAIIA d'une verticale sans plancher propre",u:"M$",st:"2 · Taille",src:"Thèse du fonds.",conf:"Élevée"},
 ];
-let TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};
-const RANGE_FIELDS=["employes","ca","baiia","ve"];   // champs qui peuvent être des fourchettes
-let UNIV=new Map(),UROWS=[],TROWS=[],TFOCUS=null,TRES=null;
+const HYP_INFO=[
+  {n:"Revenu par employé, marge de BAIIA et multiple, par industrie",v:"Tableau « Hypothèses par industrie »",st:"2 · Taille",src:"Statistique Canada 2024 et GF Data 2025; chaque ligne porte sa source.",conf:"Moyenne"},
+  {n:"Rattachement à une verticale des sociétés sans verticale évidente",v:"Par sous-secteur, SCIAN ou nom",st:"1 · Verticale",src:"Estimé (≈) sur chaque fiche, à corriger au cas par cas.",conf:"Faible"},
+  {n:"Exclusions : détenue par un fonds ou un stratégique, déjà acquise, fermée, déjà en discussion, jugée hors cible",v:"Champ « Exclusion » de chaque fiche",st:"1 · Exclusions",src:"Recherche publique et registre; le motif est dans les notes de la fiche.",conf:"Moyenne"},
+  {n:"Barème du score (100 pts)",v:"Relève 35 · Taille 25 · Verticale 15 · Fit 15 · Fiabilité 10",st:"4 · Score et plafond",src:"Fit : fort 15, modéré 10, faible 2, non évalué 6. Fiabilité : CA vérifié 10, deux sources concordantes 7, une seule source 4, écart de plus de 2x entre les sources 0.",conf:"Moyenne"},
+];
+const hypId=h=>"H"+(HYP.indexOf(h)+1);
+function hypGet(c,k,disp){
+  if(k==="disp")return Math.round((disp==null?BENCH_DISP:disp)*100);
+  const i=k.indexOf(".");
+  if(i<0)return c[k];
+  const a=k.slice(0,i),b=k.slice(i+1);
+  if(a==="prov")return (c.provinces||[]).includes(b)?1:0;
+  if(a==="vert")return (Array.isArray(c.verts)?c.verts:THESE_VERTS).includes(b)?1:0;
+  const m=c[a]||{},d=DEFAULT_CFG[a]||{};
+  return Number.isFinite(m[b])?m[b]:Number.isFinite(d[b])?d[b]:a==="ebMinV"?c.ebMin:0;
+}
+/* Renvoie une copie de la configuration avec l'hypothèse k à la valeur v. */
+function hypSet(c,k,v){
+  const o={...c},i=k.indexOf(".");
+  if(i<0){o[k]=v;return o;}
+  const a=k.slice(0,i),b=k.slice(i+1);
+  if(a==="prov"){const s=new Set(c.provinces||[]);v?s.add(b):s.delete(b);o.provinces=PROVINCES.filter(p=>s.has(p));return o;}
+  if(a==="vert"){const s=new Set(Array.isArray(c.verts)?c.verts:THESE_VERTS);v?s.add(b):s.delete(b);o.verts=THESE_VERTS.filter(x=>s.has(x));return o;}
+  o[a]={...(DEFAULT_CFG[a]||{}),...(c[a]||{}),[b]:v};return o;
+}
+const hypSrc=h=>{const o=CFG.hyp&&CFG.hyp[h.k];return (o&&o.src)||h.src;};
+const hypConf=h=>{const o=CFG.hyp&&CFG.hyp[h.k];return o&&CONF.includes(o.conf)?o.conf:h.conf;};
+
+let UNIV=new Map(),UROWS=[],TFOCUS=null,SL=null;
 const fmt=n=>Number(n||0).toLocaleString("fr-CA");
-
-/* Population de l'entonnoir : toutes les cibles du tracker, plus les profils importés qui n'y sont pas encore (même nom).
-   Pour une cible, CA et BAIIA sont les fourchettes du tracker : la valeur vérifiée, sinon l'estimé (≈). */
-function funnelRows(){
-  const rows=[],seen=new Set();
-  all().forEach(it=>{
-    const sz=D(it).sz,nn=normName(it.name);if(nn)seen.add(nn);
-    rows.push({n:it.name,neq:it.neq,v:it.ville,p:it.province,r:it.region,s:it.soussecteur,vt:it.verticale,f:it.fondation,e:it.employes,px:it.prix,ad:it.ageFond,x:it.exclusion||"",site:it.site,
-      fit:it.fit,mix:it.mix,tr:it.transaction,rec:it.recurrence,
-      ca:sz.ca,eb:sz.eb,ve:sz.ve,_sz:true,
-      _est:{ca:!!sz.ca&&sz.ca.p!=="v",baiia:!!sz.eb&&sz.eb.p!=="v",multiple:!!sz.eb&&sz.eb.p!=="v",ve:num(it.prix)==null&&!!sz.ve},
-      _cid:it.id,_stage:it.stage,_score:D(it).score,_lot:"Tracker · "+(it.canal||"sans canal")});
+/* Population : toutes les cibles du tracker, plus les profils importés qui n'y sont pas encore (même nom). */
+function funnelItems(){
+  const list=all(),seen=new Set(list.map(it=>normName(it.name)));
+  UROWS.forEach(p=>{
+    const nn=normName(p.n);if(!nn||seen.has(nn))return;seen.add(nn);
+    const it=normalize({exclusion:p.x,name:p.n,neq:p.neq,ville:p.v,province:p.p,region:p.r,soussecteur:p.s,verticale:p.vt,fondation:p.f,employes:p.e,ca:p.ca,baiia:p.eb,prix:p.px,ageFond:p.ad,site:p.site},"radar");
+    list.push({...it,id:"u:"+p._id,_u:p,_lot:p._lot});
   });
-  UROWS.forEach(p=>{if(!seen.has(normName(p.n)))rows.push(p);});
-  return rows;
+  return list;
 }
-function triVal(p,f){
-  if(p._sz&&(f==="ca"||f==="baiia"||f==="multiple"||f==="ve")){
-    if(f==="ca")return p.ca||null;
-    if(f==="baiia")return p.eb||null;
-    if(f==="ve"){const px=num(p.px);return px!=null?px:(p.ve||null);}
-    const px=num(p.px);return px!=null&&p.eb&&p.eb.mid>0?px/p.eb.mid:null;
-  }
-  switch(f){
-    case "verticale":return p.vt&&p.vt!=="À classer"?p.vt:null;
-    case "province":return p.p||null;
-    case "dispo":return p.x||"";
-    case "ageEnt":{const y=num(p.f);return y&&y>1800&&y<=YEAR?YEAR-y:null;}
-    case "ageFond":return num(p.ad);
-    case "employes":return rng(p.e);
-    case "ca":return rng(p.ca);
-    case "baiia":return rng(p.eb);
-    case "multiple":{const px=num(p.px),eb=rng(p.eb);return px!=null&&eb&&eb.mid>0?px/eb.mid:null;}
-    case "prix":return num(p.px);
-    case "ve":return num(p.px);
-    case "fit":return p.fit&&p.fit!=="À évaluer"?p.fit:null;
-    case "mix":return p.mix||null;
-    case "transaction":return p.tr||null;
-    case "recurrence":return p.rec||null;
-  }
-  return null;
-}
-function stepTest(s,p){
-  const def=TRI_FIELDS[s.field];if(!def)return true;
-  if(def.kind==="releve"){
-    const af=num(p.ad);if(af!=null&&af>0)return s.min==null||af>=s.min;
-    const ae=triVal(p,"ageEnt");if(ae!=null)return s.ent==null||ae>=s.ent;
-    return null;
-  }
-  const v=triVal(p,s.field);
-  if(def.kind==="flag")return !v;
-  if(v==null)return null;
-  if(def.kind==="set")return (s.values||[]).includes(v);
-  /* Une fourchette (estimé, ou « 10-35 ») se teste par défaut sur sa valeur centrale; « toute la fourchette » ne retire
-     que si elle est entièrement hors des bornes, ce qui garde presque tout quand l'estimé est large. */
-  const whole=s.mode==="range";
-  const lo=typeof v==="object"?(whole?v.lo:v.mid):v,hi=typeof v==="object"?(whole?v.hi:v.mid):v;
-  if(s.min!=null&&hi<s.min)return false;
-  if(s.max!=null&&lo>s.max)return false;
-  return true;
-}
-function runTri(){
-  const steps=TRI.steps.filter(s=>s.on&&TRI_FIELDS[s.field]);
-  TROWS=funnelRows();
-  const N=TROWS.length;
-  const st=steps.map(()=>({okok:0,okunk:0,unkunk:0,okout:0,unkout:0,unkdrop:0}));
-  const fate=new Array(N);
-  for(let i=0;i<N;i++){
-    const p=TROWS[i];let state="ok";const miss=[],est=[];let done=false;
-    for(let j=0;j<steps.length;j++){
-      const r=stepTest(steps[j],p),S=st[j];
-      if(r===true){state==="ok"?S.okok++:S.unkunk++;if(steps[j].field==="releve"?!(num(p.ad)>0):(p._est&&p._est[steps[j].field]))est.push(steps[j].field);continue;}
-      if(r===null&&steps[j].unknown!=="drop"){miss.push(steps[j].field);if(state==="ok"){S.okunk++;state="unk";}else S.unkunk++;continue;}
-      state==="ok"?S.okout++:S.unkout++;
-      if(r===null)S.unkdrop++;
-      fate[i]={out:j,why:r===null?"unk":"fail",state,miss,est};done=true;break;
-    }
-    if(!done)fate[i]={out:-1,state,miss,est};
-  }
-  const cols=[{ok:N,unk:0,out:0}];
-  st.forEach(S=>cols.push({ok:S.okok,unk:S.okunk+S.unkunk,out:S.okout+S.unkout}));
-  return {steps,st,cols,fate,N,rows:TROWS};
-}
-function trackerNames(){return new Set(all().map(it=>normName(it.name)).filter(n=>n.length>2));}
-function wrapLabel(s,max){
-  const w=String(s).split(/\s+/),lines=[""];
-  w.forEach(x=>{const l=lines[lines.length-1];if((l+" "+x).trim().length>max&&l)lines.push(x);else lines[lines.length-1]=(l+" "+x).trim();});
-  if(lines.length>2){lines.length=2;lines[1]=lines[1].slice(0,max-1)+"…";}
-  return lines;
-}
-
-/* Sankey d'attrition : le tronc rétrécit, chaque étape détache ses éliminées */
-function renderTriSankey(R){
-  const host=$("#sankey"),tip=$("#skTip");
-  $("#skLegend").innerHTML=[["var(--keep)","Passent sur les critères (données ou estimés ≈)"],["var(--check)","Passent sans donnée"],["var(--out)","Éliminées"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique une colonne ou une coupe pour voir ses entreprises.</span>`;
-  if(!R.N){host.innerHTML=`<div class="empty">Aucun profil importé. Utilise « + Importer des profils ».</div>`;return;}
-  const S=R.steps.length;
-  const avail=host.parentElement.clientWidth||1100;
-  const W=Math.max(avail,(S+1)*128,640);
-  const NW=12,top=52,G=26,TH=Math.max(220,Math.min(330,140+S*22));
-  const k=TH/R.N,H=top+TH+G+34;
-  /* marge à droite : le titre de la dernière colonne se centre sur elle sans chevaucher le précédent */
-  const PADR=S?Math.round(Math.min(80,(W-NW)/(S+1)/2)):0;
-  const xs=[...Array(S+1)].map((_,c)=>S?Math.round(c*(W-NW-2-PADR)/S):0);
-  const per=S?(W-NW-PADR)/S:W,lmax=Math.max(10,Math.min(20,Math.floor(per/8)));
-  const rem=c=>R.cols[c].ok+R.cols[c].unk;
-  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Entonnoir de tri : ${fmt(R.N)} profils au départ, ${fmt(rem(S))} en shortlist">`;
-  for(let c=0;c<=S;c++){
-    const lines=wrapLabel(c===0?"Univers":R.steps[c-1].label,lmax);
-    const anchor=c===0?"start":"middle";
-    const x=c===0?xs[c]:xs[c]+NW/2;
-    svg+=`<text class="sk-col" y="14" text-anchor="${anchor}">${lines.map((l,i)=>`<tspan x="${x}" dy="${i?13:0}">${esc(l)}</tspan>`).join("")}</text>`;
-  }
-  const bands=[];
-  for(let c=1;c<=S;c++){
-    const T=R.st[c-1],prev=R.cols[c-1],cur=R.cols[c];
-    const xa=xs[c-1]+NW,xb=xs[c];
-    let so=top,su=top+prev.ok*k,dU=top+cur.ok*k,dL=top+rem(c)*k+G;
-    const add=(n,sy,ty,g,kind)=>{if(n)bands.push({c,n,sy,ty,h:n*k,g,kind,xa,xb});};
-    add(T.okok,so,top,"keep","pass");so+=T.okok*k;
-    add(T.okunk,so,dU,"check","newunk");so+=T.okunk*k;dU+=T.okunk*k;
-    add(T.okout,so,dL,"out","cut");dL+=T.okout*k;
-    add(T.unkunk,su,dU,"check","unk");su+=T.unkunk*k;
-    add(T.unkout,su,dL,"out","cut");
-  }
-  const colorOf=g=>GROUPS.find(x=>x.id===g).c;
-  bands.forEach((b,i)=>{
-    const xm=(b.xa+b.xb)/2,h=Math.max(b.h,0.8);
-    const d=`M${b.xa},${b.sy} C${xm},${b.sy} ${xm},${b.ty} ${b.xb},${b.ty} L${b.xb},${b.ty+h} C${xm},${b.ty+h} ${xm},${b.sy+h} ${b.xa},${b.sy+h} Z`;
-    const dim=TFOCUS&&TFOCUS.c!==b.c;
-    svg+=`<path class="sk-link" data-b="${i}" d="${d}" fill="${colorOf(b.g)}" fill-opacity="${dim?0.22:0.45}"></path>`;
+/* Classement : score, puis l'entreprise la plus ancienne, puis l'identifiant. Les `cap` premières forment la shortlist. */
+function shortlist(){
+  if(SL&&SL.der===DER)return SL;
+  const rows=funnelItems().map(it=>({it,d:D(it)}));
+  const pass=rows.filter(r=>r.d.f.z==="passe").sort((a,b)=>b.d.score-a.d.score||(b.d.age==null?-1:b.d.age)-(a.d.age==null?-1:a.d.age)||(a.it.id<b.it.id?-1:a.it.id>b.it.id?1:0));
+  const cap=Math.max(0,Math.round(+CFG.cap||0)),capA=Math.max(0,Math.round(+CFG.capA||0));
+  const rank=new Map();pass.forEach((r,i)=>rank.set(r.it.id,i+1));
+  rows.forEach(r=>{
+    const f=r.d.f,k=rank.get(r.it.id);
+    r.rank=k||null;
+    r.b=f.z==="rejet"?f.st:f.z==="grise"?"grise":k<=cap?"sl":"reserve";
+    r.tier=r.b==="sl"?(k<=capA?"A":"B"):"";
   });
-  for(let c=0;c<=S;c++){
-    const h=Math.max(2,rem(c)*k),on=TFOCUS&&TFOCUS.type==="trunk"&&TFOCUS.c===c;
-    const last=c===S,lx=last?xs[c]-7:xs[c]+NW+7;
-    svg+=`<g class="sk-node${on?" on":""}" data-tt="trunk" data-c="${c}" tabindex="0" role="button" aria-label="${esc(c===0?"Univers":R.steps[c-1].label)} : ${fmt(rem(c))} restantes"><rect x="${xs[c]}" y="${top}" width="${NW}" height="${h}" rx="2"></rect><rect x="${xs[c]-6}" y="${top-4}" width="${NW+12}" height="${h+8}" fill="transparent"></rect></g>`;
-    svg+=`<text class="sk-lab" x="${lx}" y="${top+12}" text-anchor="${last?"end":"start"}">${fmt(rem(c))}${c===0?" <tspan>profils</tspan>":last?" <tspan>en shortlist</tspan>":""}</text>`;
-  }
-  for(let c=1;c<=S;c++){
-    const n=R.cols[c].out;if(!n)continue;
-    const y=top+rem(c)*k+G,h=Math.max(2,n*k),on=TFOCUS&&TFOCUS.type==="cut"&&TFOCUS.c===c;
-    svg+=`<g class="sk-node${on?" on":""}" data-tt="cut" data-c="${c}" tabindex="0" role="button" aria-label="${esc(R.steps[c-1].label)} : ${fmt(n)} éliminées"><rect x="${xs[c]}" y="${y}" width="${NW}" height="${h}" rx="2" style="fill:#7D838C"></rect><rect x="${xs[c]-6}" y="${y-4}" width="${NW+12}" height="${h+8}" fill="transparent"></rect></g>`;
-    svg+=`<text class="sk-lab" x="${xs[c]+NW/2}" y="${y+h+15}" text-anchor="${c===S?"end":"middle"}">−${fmt(n)}</text>`;
-  }
-  svg+=`</svg>`;
-  host.innerHTML=svg;
-  const box=$(".skbox");
-  $$(".sk-link",host).forEach(p=>{
-    const b=bands[+p.dataset.b],lab=R.steps[b.c-1].label;
-    const txt=b.kind==="pass"?`<b>${fmt(b.n)}</b> confirmées passent « ${esc(lab)} »`:b.kind==="newunk"?`<b>${fmt(b.n)}</b> passent « ${esc(lab)} » sans donnée`:b.kind==="unk"?`<b>${fmt(b.n)}</b> déjà sans donnée passent « ${esc(lab)} »`:`<b>${fmt(b.n)}</b> éliminées par « ${esc(lab)} »`;
-    p.addEventListener("mousemove",e=>{
-      const r=box.getBoundingClientRect();tip.hidden=false;tip.innerHTML=txt;
-      let x=e.clientX-r.left+14;if(x+tip.offsetWidth>r.width-8)x=e.clientX-r.left-tip.offsetWidth-14;
-      tip.style.left=x+"px";tip.style.top=(e.clientY-r.top+14)+"px";p.setAttribute("fill-opacity",0.8);
-    });
-    p.addEventListener("mouseleave",()=>{tip.hidden=true;p.setAttribute("fill-opacity",TFOCUS&&TFOCUS.c!==b.c?0.22:0.45);});
+  const n=b=>rows.filter(r=>r.b===b).length;
+  const st={N:rows.length,excl:n("excl"),vert:n("vert"),geo:n("geo"),releve:n("releve"),taille:n("taille"),grise:n("grise"),pass:pass.length,sl:n("sl"),A:rows.filter(r=>r.tier==="A").length,B:rows.filter(r=>r.tier==="B").length,reserve:n("reserve")};
+  const tri=new Map();
+  rows.forEach(r=>{
+    if(r.b!=="sl"&&r.b!=="reserve"&&r.b!=="grise")return;
+    const v=r.it.verticale||"À classer",x=tri.get(v)||{slN:0,slC:0,rN:0,rC:0,g:0};
+    if(r.b==="grise")x.g++;else x[(r.b==="sl"?"sl":"r")+(r.d.f.role==="Noyau"?"N":"C")]++;
+    tri.set(v,x);
   });
-  $$(".sk-node",host).forEach(g=>{
-    const act=()=>{const t={type:g.dataset.tt,c:+g.dataset.c};TFOCUS=(TFOCUS&&TFOCUS.type===t.type&&TFOCUS.c===t.c)?null:t;renderFunnel();};
-    g.addEventListener("click",act);
-    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act();}});
+  return SL={der:DER,rows,st,tri};
+}
+/* Rejoue l'entonnoir avec une autre configuration, sans toucher à l'affichage. */
+function withCfg(cfg,disp,fn){
+  const c0=CFG,d0=BENCH_DISP,der0=DER,sl0=SL;
+  CFG=cfg;if(disp!=null)BENCH_DISP=disp;DER=new Map();SL=null;
+  try{return fn();}finally{CFG=c0;BENCH_DISP=d0;DER=der0;SL=sl0;}
+}
+/* Effet de chaque hypothèse : on la remplace par sa valeur de test et on compare la shortlist. */
+let IMP=null;
+function hypImpacts(){
+  if(IMP&&IMP.der===DER)return IMP.m;
+  const base=shortlist(),ids=new Set(base.rows.filter(r=>r.b==="sl").map(r=>r.it.id));
+  const cores=S=>S.rows.filter(r=>r.b==="sl"&&r.d.f.role==="Noyau").length;
+  const m=new Map();
+  HYP.forEach(h=>{
+    if(h.alt==null)return;
+    const cur=hypGet(CFG,h.k);if(cur===h.alt)return;
+    const S=h.k==="disp"?withCfg(CFG,h.alt/100,shortlist):withCfg(hypSet(CFG,h.k,h.alt),null,shortlist);
+    const now=S.rows.filter(r=>r.b==="sl").map(r=>r.it.id);
+    const ins=now.filter(id=>!ids.has(id)).length,outs=[...ids].filter(id=>!now.includes(id)).length;
+    m.set(h.k,{alt:h.alt,chg:Math.max(ins,outs),sl:[base.st.sl,S.st.sl],pass:[base.st.pass,S.st.pass],grise:[base.st.grise,S.st.grise],noy:[cores(base),cores(S)]});
   });
+  IMP={der:DER,m};return m;
 }
-/* Rôle dans un triptyque selon la taille centrale : noyau si CA ≥ CA min de la thèse et BAIIA ≥ plancher de la verticale. */
-function roleOf(p){
-  const mid=v=>v==null?null:typeof v==="object"?v.mid:v;
-  const ca=mid(triVal(p,"ca")),eb=mid(triVal(p,"baiia"));
-  if(ca==null&&eb==null)return "";
-  return (ca==null||ca>=CFG.caMin)&&(eb==null||eb>=ebFloor({verticale:p.vt}))?"Noyau":"Add-on";
+function impactTxt(h,x){
+  if(!x)return h.note||(h.alt==null?"Sans effet aujourd'hui : aucune donnée.":"—");
+  const unit=h.u&&!/pts|soc/.test(h.u)?" "+h.u:"";
+  const v=h.bool?(x.alt?"Si retenue":"Si retirée"):`À ${dec(x.alt)}${unit} au lieu de ${dec(hypGet(CFG,h.k))}`;
+  const bits=[];
+  if(x.sl[0]!==x.sl[1])bits.push(`la shortlist passe de ${x.sl[0]} à ${x.sl[1]}`);
+  bits.push(x.chg?`${x.chg} société${x.chg>1?"s":""} de la shortlist change${x.chg>1?"nt":""}`:"la shortlist ne change pas");
+  if(x.noy[0]!==x.noy[1])bits.push(`noyaux en shortlist ${x.noy[0]} → ${x.noy[1]}`);
+  if(x.pass[0]!==x.pass[1])bits.push(`qualifiées ${x.pass[0]} → ${x.pass[1]}`);
+  if(x.grise[0]!==x.grise[1])bits.push(`zone grise ${x.grise[0]} → ${x.grise[1]}`);
+  return v+" : "+bits.join("; ")+".";
 }
-function triInsights(R){
-  if(!R.N)return [];
-  const out=[],S=R.steps.length,last=R.cols[S];
-  const okEst=R.fate.filter(f=>f.out===-1&&f.state==="ok"&&f.est&&f.est.length).length;
-  out.push({g:"keep",t:`Shortlist : <b>${fmt(last.ok+last.unk)}</b> profils sur ${fmt(R.N)} (${pct(last.ok+last.unk,R.N)}). ${fmt(last.ok)} passent tous les critères${okEst?`, dont ${fmt(okEst)} grâce à des estimés (≈) à vérifier`:""}.`});
-  if(S){
-    let bi=0;R.st.forEach((x,j)=>{if(x.okout+x.unkout>R.st[bi].okout+R.st[bi].unkout)bi=j;});
-    const n=R.st[bi].okout+R.st[bi].unkout,inN=R.cols[bi].ok+R.cols[bi].unk;
-    if(n)out.push({g:"out",t:`Plus grosse coupe : <b>${esc(R.steps[bi].label)}</b>, −${fmt(n)} (${pct(n,inN)} de ce qui y arrive).`});
-  }
-  if(last.unk){
-    const cnt=new Map();R.fate.forEach(f=>{if(f.out===-1&&f.state==="unk")f.miss.forEach(m=>cnt.set(m,(cnt.get(m)||0)+1));});
-    const t=[...cnt].sort((a,b)=>b[1]-a[1])[0];
-    if(t)out.push({g:"check",t:`<b>${fmt(last.unk)}</b> profils de la shortlist passent sans donnée, surtout sur « ${esc(TRI_FIELDS[t[0]].label)} » (${fmt(t[1])}). À vérifier avant l'appel.`});
-  }
-  const dr=R.st.map((x,j)=>[x.unkdrop,j]).filter(x=>x[0]).sort((a,b)=>b[0]-a[0])[0];
-  if(dr)out.push({g:"",t:`« ${esc(R.steps[dr[1]].label)} » élimine ${fmt(dr[0])} profils faute de donnée (réglé sur « éliminer »).`});
-  const rows=R.rows||[],by=new Map();
-  R.fate.forEach((f,i)=>{if(f.out!==-1)return;const p=rows[i],v=p.vt&&p.vt!=="À classer"&&p.vt!=="Hors thèse"?p.vt:"À classer",r=roleOf(p);const x=by.get(v)||{n:0,a:0,u:0};r==="Noyau"?x.n++:r==="Add-on"?x.a++:x.u++;by.set(v,x);});
-  const parts=[...THESE_VERTS,"À classer"].filter(v=>by.has(v)).map(v=>{const x=by.get(v);return `${esc(vlab(v))} <b>${fmt(x.n)}</b> · ${fmt(x.a)}`;});
-  if(parts.length)out.splice(1,0,{g:"",t:`Matière à triptyques dans la shortlist (noyaux · add-ons) : ${parts.join(" ; ")}. Noyau : CA ≥ ${dec(CFG.caMin)} M$ et BAIIA ≥ plancher de la verticale, en valeurs centrales.`});
-  return out.slice(0,5);
+/* Hypothèses triées par effet sur la shortlist. */
+function hypSorted(){
+  const m=hypImpacts(),w=h=>{const x=m.get(h.k);return x?x.chg*1e6+Math.abs(x.sl[1]-x.sl[0])*1e4+Math.abs(x.noy[1]-x.noy[0])*10+Math.abs(x.pass[1]-x.pass[0]):-1;};
+  /* Les hypothèses d'une même question (g) se suivent, placées selon la plus forte du groupe. */
+  const L=HYP.map((h,i)=>({h,i,w:w(h)})),gw=new Map();
+  L.forEach(x=>{if(x.h.g)gw.set(x.h.g,Math.max(gw.get(x.h.g)??-1,x.w));});
+  const W=x=>x.h.g?gw.get(x.h.g):x.w;
+  return L.sort((a,b)=>W(b)-W(a)||(a.h.g===b.h.g?b.w-a.w:0)||a.i-b.i).map(x=>x.h);
 }
-function renderSteps(R){
-  let ei=0;
-  const rows=TRI.steps.map((s,i)=>{
-    const def=TRI_FIELDS[s.field]||{label:s.field};
-    const rule=def.kind==="flag"?`<span>Retire les entreprises marquées détenues par un fonds, un stratégique ou une coopérative, déjà acquises, fermées ou jugées hors cible.</span>`
-      :def.kind==="releve"?`<span>Fondateur ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":s.min}" aria-label="Âge minimum du fondateur, étape ${i+1}" inputmode="decimal"><span>ans; si son âge est inconnu, entreprise ≥</span><input class="num" data-stent="${i}" value="${s.ent==null?"":s.ent}" aria-label="Âge minimum de l'entreprise, étape ${i+1}" inputmode="decimal"><span>ans (indice ≈)</span>`
-      :def.kind==="set"
-      ?`<span>${esc(def.label)} parmi</span>`+def.opts.map(o=>`<button type="button" class="fchip${(s.values||[]).includes(o)?" on":""}" data-stv="${i}" data-v="${esc(o)}" aria-pressed="${(s.values||[]).includes(o)}">${esc(s.field==="verticale"?vlab(o):o)}</button>`).join("")
-      :`<span>${esc(def.label)} ≥</span><input class="num" data-stmin="${i}" value="${s.min==null?"":String(s.min).replace(".",",")}" aria-label="Minimum de l'étape ${i+1}" inputmode="decimal"><span>et ≤</span><input class="num" data-stmax="${i}" value="${s.max==null?"":String(s.max).replace(".",",")}" aria-label="Maximum de l'étape ${i+1}" inputmode="decimal"><span>${esc(def.unit||"")}</span>${RANGE_FIELDS.includes(s.field)?`<span class="st-mode">· tester <select data-stmode="${i}" aria-label="Comment tester une fourchette à l'étape ${i+1}"><option value="mid"${s.mode!=="range"?" selected":""}>la valeur centrale</option><option value="range"${s.mode==="range"?" selected":""}>toute la fourchette</option></select></span>`:""}`;
-    let count=`<span style="color:var(--ink-3)">Étape ignorée</span>`;
-    if(s.on&&TRI_FIELDS[s.field]&&R.N){
-      const j=ei++,S=R.st[j],inN=R.cols[j].ok+R.cols[j].unk,cut=S.okout+S.unkout,rest=R.cols[j+1].ok+R.cols[j+1].unk;
-      count=`${fmt(inN)} entrent · <span class="cut">−${fmt(cut)}</span>${S.unkdrop?` (dont ${fmt(S.unkdrop)} sans donnée)`:""} · <b>${fmt(rest)}</b> restent${S.okunk?` · ${fmt(S.okunk)} sans donnée`:""}`;
-    }else if(s.on)count="—";
-    return `<div class="st-row${s.on?"":" off"}"><span class="st-n">${i+1}</span><input type="checkbox" data-ston="${i}"${s.on?" checked":""} aria-label="Activer l'étape ${i+1}"><input type="text" data-stlabel="${i}" value="${esc(s.label)}" aria-label="Nom de l'étape ${i+1}"><div class="st-rule">${rule}</div><label class="st-unk">Si inconnu <select data-stunk="${i}"><option value="keep"${s.unknown!=="drop"?" selected":""}>garder</option><option value="drop"${s.unknown==="drop"?" selected":""}>éliminer</option></select></label><div class="st-count">${count}</div><div class="st-btns"><button type="button" data-stup="${i}" aria-label="Monter l'étape ${i+1}">↑</button><button type="button" data-stdown="${i}" aria-label="Descendre l'étape ${i+1}">↓</button><button type="button" data-stdel="${i}" aria-label="Retirer l'étape ${i+1}">✕</button></div></div>`;
+const BUCKET_N={excl:"Exclusions",vert:"Verticale non retenue",geo:"Hors géographie",releve:"Fondateur trop jeune",taille:"Hors taille",grise:"Zone grise",sl:"Shortlist",reserve:"Réserve"};
+const href=k=>{const h=HYP.find(x=>x.k===k);return h?`<span class="href" title="${esc(h.n)}">${hypId(h)}</span>`:"";};
+function whyLine(it,d){
+  const f=d.f,p=d.parts;
+  const fi=p.fiab>=10?"CA vérifié":p.fiab>=7?"deux sources concordantes":p.fiab>=4?"une seule source":"sources en désaccord (plus de 2x)";
+  return `${f.role}${f.bas?" du bas de la fourchette":""} · ${vlab(it.verticale)} · ${d.rel.txt} · ${fi}`;
+}
+function triInsights(S){
+  const st=S.st;if(!st.N)return [];
+  const withCore=vertsOn().map(v=>[v,S.tri.get(v)||{slN:0,rN:0}]);
+  const none=withCore.filter(([,x])=>!(x.slN+x.rN)).map(([v])=>vlab(v));
+  const best=withCore.slice().sort((a,b)=>(b[1].slN+b[1].rN)-(a[1].slN+a[1].rN)).filter(([,x])=>x.slN+x.rN).slice(0,2).map(([v,x])=>`${vlab(v)} (${x.slN+x.rN})`);
+  return [
+    {g:"keep",t:`De <b>${fmt(st.N)}</b> sociétés à une shortlist de <b>${fmt(st.sl)}</b> : ${fmt(st.A)} en A (premiers appels), ${fmt(st.B)} en B. ${fmt(st.pass)} passent tous les filtres; le plafond d'analyse en garde ${fmt(st.sl)} et laisse ${fmt(st.reserve)} en réserve.`},
+    {g:"check",t:`<b>${fmt(st.grise)}</b> sociétés en zone grise : leur fourchette touche la fenêtre de taille, mais leur valeur centrale est dehors. Ni shortlist, ni rejet : un chiffre vérifié les fait basculer.`},
+    {g:none.length?"out":"",t:`Candidats noyau qualifiés : ${best.join(", ")||"aucun"}${best.length?" en tête":""}. ${none.length?`<b>Aucun noyau crédible</b> en ${none.join(", ")}.`:"Chaque verticale retenue a au moins un candidat noyau."}`},
+  ];
+}
+function renderFSteps(S){
+  const st=S.st,pop=S.rows.map(r=>r.it),nF=pop.filter(it=>num(it.ageFond)>0).length,nA=pop.filter(it=>ageOf(it)!=null).length;
+  let rest=st.N;
+  const row=(k,n,name,rule,cut,opt={})=>{
+    const inN=rest;if(cut!=null)rest-=cut;
+    return `<div class="fs-row${opt.off?" off":""}${TFOCUS===k&&k?" on":""}"${k?` data-fk="${k}" tabindex="0" role="button"`:""}><span class="fs-n">${n}</span><div class="fs-name"><b>${name}</b><span>${rule}</span></div><div class="fs-num">${opt.off?`<span class="fs-off">${opt.off}</span>`:`${fmt(inN)} entrent · <span class="cut">−${fmt(cut)}</span>${opt.extra||""} · <b>${fmt(rest)}</b> restent`}</div><div class="fs-bar"><i style="width:${st.N?Math.max(0.5,rest/st.N*100):0}%"></i></div></div>`;
+  };
+  const c=CFG;
+  let h=`<div class="st-head"><b>De la base à la shortlist</b><span>Clique une étape pour voir ses sociétés. Les renvois (H1, H2…) pointent vers les hypothèses plus bas.</span></div>`;
+  h+=`<div class="fs-row base"><span class="fs-n">0</span><div class="fs-name"><b>Base complète</b><span>Toutes les cibles du tracker et les profils importés.</span></div><div class="fs-num"><b>${fmt(st.N)}</b> sociétés</div><div class="fs-bar"><i style="width:100%"></i></div></div>`;
+  h+=row("excl","1a","Exclusions","Détenue par un fonds ou un stratégique, déjà acquise, fermée, déjà en discussion ou jugée hors cible.",st.excl);
+  h+=row("vert","1b","Verticale",`Verticales retenues : ${vertsOn().map(vlab).join(", ")||"aucune"}. ${href("vert.Défense")} ${href("vert.Services B2B")} ${href("vert.Manuf. niche")}`,st.vert);
+  h+=row("geo","1c","Géographie",`Provinces retenues : ${(c.provinces||[]).join(" + ")||"aucune"}. ${href("prov.ON")}`,st.geo);
+  h+=row("taille","2","Taille, sur la valeur centrale",`CA de ${dec(c.addonCaMin)} à ${dec(c.caMax)} M$, BAIIA de ${dec(c.addonEbMin)} à ${dec(c.ebMax)} M$, valeur d'entreprise ≤ ${dec(c.veMax)} M$. Rejet seulement si toute la fourchette est dehors; sinon zone grise. ${["addonCaMin","caMax","addonEbMin","ebMax","veMax","margeAgro","rpeAdj","disp"].map(href).join(" ")}`,st.taille+st.grise,{extra:` <span class="fs-split">(${fmt(st.taille)} rejets, <span class="gr">${fmt(st.grise)} en zone grise</span>)</span>`});
+  h+=nF?row("releve","3","Signal de relève",`Fondateur de ${dec(c.releveFond)} ans et plus, quand son âge est connu (${fmt(nF)} fiches). ${href("releveFond")}`,st.releve)
+    :row("","3","Signal de relève",`Fondateur de ${dec(c.releveFond)} ans et plus ${href("releveFond")}. À défaut, l'âge de l'entreprise (connu sur ${fmt(nA)} fiches) sert d'indice dans le score ${href("releveEnt")} : ce n'est pas un filtre.`,null,{off:"Inactive : aucun âge de fondateur connu"});
+  h+=row("reserve","4","Score et plafond",`Classement par score; les ${dec(c.cap)} premières forment la shortlist (A : les ${dec(c.capA)} premières), les autres restent en réserve. ${["cap","capA","ptsBas","ptsCompl","releveEnt"].map(href).join(" ")}`,st.reserve,{extra:` <span class="fs-split">(en réserve)</span>`});
+  h+=`<div class="fs-row end${!TFOCUS?" on":""}" data-fk="sl" tabindex="0" role="button"><span class="fs-n">★</span><div class="fs-name"><b>Shortlist</b><span>Proposition pour les appels de scouting. Rien ne passe au Backlog sans ta décision.</span></div><div class="fs-num"><b>${fmt(st.sl)}</b> sociétés · A ${fmt(st.A)} · B ${fmt(st.B)}</div><div class="fs-bar"><i style="width:${st.N?st.sl/st.N*100:0}%"></i></div></div>`;
+  h+=`<div class="fs-row gris${TFOCUS==="grise"?" on":""}" data-fk="grise" tabindex="0" role="button"><span class="fs-n">≈</span><div class="fs-name"><b>Zone grise</b><span>Fourchette à cheval sur la fenêtre avec une valeur centrale dehors, ou donnée manquante. À vérifier avant de trancher.</span></div><div class="fs-num"><b>${fmt(st.grise)}</b> sociétés</div><div class="fs-bar"><i style="width:${st.N?st.grise/st.N*100:0}%"></i></div></div>`;
+  $("#steps").innerHTML=h;
+}
+function renderTript(S){
+  const vs=[...vertsOn(),...[...S.tri.keys()].filter(v=>!vertsOn().includes(v))];
+  const rows=vs.map(v=>{
+    const x=S.tri.get(v)||{slN:0,slC:0,rN:0,rC:0,g:0},cores=x.slN+x.rN;
+    const verdict=!cores?`<span class="vchip out"><i aria-hidden="true">✕</i>Aucun noyau crédible</span>`:x.slN&&x.slC>=2?`<span class="vchip keep"><i aria-hidden="true">✓</i>Triptyque possible dans la shortlist</span>`:x.slN?`<span class="vchip check"><i aria-hidden="true">?</i>Noyau en shortlist, compléments en réserve</span>`:`<span class="vchip check"><i aria-hidden="true">?</i>Noyaux en réserve seulement</span>`;
+    return `<tr><td><b>${esc(vlab(v))}</b></td><td class="n">${x.slN}</td><td class="n">${x.slC}</td><td class="n">${x.rN}</td><td class="n">${x.rC}</td><td class="n gr">${x.g}</td><td class="n">${dec(ebFloor({verticale:v}))}</td><td>${verdict}</td></tr>`;
   }).join("");
-  $("#steps").innerHTML=`<div class="st-head"><b>Étapes du tri</b><span>Appliquées dans l'ordre. Une étape décochée est ignorée.</span><div class="right"><select id="stAdd" aria-label="Ajouter une étape"><option value="">+ Ajouter une étape…</option>${Object.entries(TRI_FIELDS).map(([k,d])=>`<option value="${k}">${esc(d.label)}</option>`).join("")}</select><button type="button" class="btn sm" id="stReset">Étapes par défaut</button></div></div>${rows}`;
+  $("#tript").innerHTML=`<div class="st-head"><b>Lecture par triptyque</b><span>Noyau : CA central ≥ ${dec(CFG.caMin)} M$ et BAIIA central ≥ plancher de la verticale. Complément : sous le noyau, dans la fenêtre. ${href("caMin")}</span></div><div class="hyp-scroll"><table class="ft"><thead><tr><th>Verticale</th><th class="n">Shortlist · noyaux</th><th class="n">Shortlist · compléments</th><th class="n">Réserve · noyaux</th><th class="n">Réserve · compléments</th><th class="n">Zone grise</th><th class="n">Plancher BAIIA (M$)</th><th>Lecture</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
-let triChain=Promise.resolve();
-function saveTri(){
-  TFOCUS=null;renderFunnel();
-  if(!db)return;
-  const body={steps:TRI.steps.map(s=>clean(s))};
-  triChain=triChain.then(()=>db.doc("config/tri").set(body)).catch(writeErr);
+function renderHyp(){
+  const m=hypImpacts();
+  const rows=hypSorted().map(h=>`<tr><td class="hid">${hypId(h)}</td><td>${esc(h.n)}</td><td class="n"><b>${esc(dec(hypGet(CFG,h.k)))}</b> <span class="u">${esc(h.u)}</span></td><td>${esc(h.st)}</td><td class="src">${esc(hypSrc(h))}</td><td>${esc(hypConf(h))}</td><td class="imp">${esc(impactTxt(h,m.get(h.k)))}</td></tr>`).join("")
+    +HYP_INFO.map((h,i)=>`<tr><td class="hid">H${HYP.length+i+1}</td><td>${esc(h.n)}</td><td>${esc(h.v)}</td><td>${esc(h.st)}</td><td class="src">${esc(h.src)}</td><td>${esc(h.conf)}</td><td class="imp">—</td></tr>`).join("");
+  $("#hypBox").innerHTML=`<div class="st-head"><b>Hypothèses de l'entonnoir</b><span>Triées par effet sur la shortlist : chaque hypothèse est rejouée avec une valeur de test.</span><div class="right"><button type="button" class="btn sm" id="hypBench">Hypothèses par industrie</button><button type="button" class="btn sm dark" id="hypEdit">Modifier les hypothèses</button></div></div><div class="hyp-scroll"><table class="ft hyp"><thead><tr><th>#</th><th>Hypothèse</th><th class="n">Valeur</th><th>Étape</th><th>Source</th><th>Confiance</th><th>Effet si elle change</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  $("#hypEdit").onclick=()=>$("#btnThese").click();
+  $("#hypBench").onclick=()=>$("#btnBench").click();
 }
-$("#steps").addEventListener("change",e=>{
-  const t=e.target,d=t.dataset;
-  if(t.id==="stAdd"){const k=t.value;if(!k)return;const def=TRI_FIELDS[k];TRI.steps.push(def.kind==="flag"?{field:k,label:def.def,unknown:"keep",on:true}:def.kind==="releve"?{field:k,label:def.def,min:55,ent:30,unknown:"keep",on:true}:def.kind==="set"?{field:k,label:def.def,values:(def.defv||def.opts).slice(),unknown:"keep",on:true}:{field:k,label:def.def,min:null,max:null,unknown:"keep",on:true});saveTri();return;}
-  if(d.ston!=null){TRI.steps[+d.ston].on=t.checked;saveTri();return;}
-  if(d.stlabel!=null){TRI.steps[+d.stlabel].label=str(t.value)||TRI_FIELDS[TRI.steps[+d.stlabel].field].def;saveTri();return;}
-  if(d.stmin!=null){TRI.steps[+d.stmin].min=num(t.value);saveTri();return;}
-  if(d.stmax!=null){TRI.steps[+d.stmax].max=num(t.value);saveTri();return;}
-  if(d.stunk!=null){TRI.steps[+d.stunk].unknown=t.value;saveTri();return;}
-  if(d.stmode!=null){TRI.steps[+d.stmode].mode=t.value;saveTri();return;}
-  if(d.stent!=null){TRI.steps[+d.stent].ent=num(t.value);saveTri();return;}
-});
-$("#steps").addEventListener("click",e=>{
-  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
-  if(t.id==="stReset"){TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};saveTri();return;}
-  if(d.stv!=null){const s=TRI.steps[+d.stv];const v=new Set(s.values||[]);v.has(d.v)?v.delete(d.v):v.add(d.v);s.values=[...v];saveTri();return;}
-  const sw=(i,j)=>{if(j<0||j>=TRI.steps.length)return;[TRI.steps[i],TRI.steps[j]]=[TRI.steps[j],TRI.steps[i]];saveTri();};
-  if(d.stup!=null)return sw(+d.stup,+d.stup-1);
-  if(d.stdown!=null)return sw(+d.stdown,+d.stdown+1);
-  if(d.stdel!=null){TRI.steps.splice(+d.stdel,1);saveTri();}
-});
-function statusHTML(f,R){
-  if(f.out>=0)return `<span class="vchip out"><i aria-hidden="true">✕</i>${esc(R.steps[f.out].label)}${f.why==="unk"?" (sans donnée)":""}</span>`;
-  if(f.state==="ok"&&f.est&&f.est.length)return `<span class="vchip keep" title="Passe grâce à des valeurs estimées : à vérifier"><i aria-hidden="true">✓</i>Passe sur estimés ≈ : ${esc(f.est.map(m=>TRI_FIELDS[m].label).join(", "))}</span>`;
-  if(f.state==="ok")return `<span class="vchip keep"><i aria-hidden="true">✓</i>Confirmée</span>`;
-  return `<span class="vchip check" title="Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}"><i aria-hidden="true">?</i>Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}</span>`;
-}
-function renderTriList(R){
-  const TR=R.rows||[];
-  const host=$("#triList"),S=R.steps.length;
-  if(!R.N){host.innerHTML="";$("#focusbar").innerHTML="";return;}
-  const f=TFOCUS||{type:"trunk",c:S};
-  const idx=[];
-  R.fate.forEach((x,i)=>{if(f.type==="trunk"?(x.out===-1||x.out>=f.c):x.out===f.c-1)idx.push(i);});
-  const rank=x=>x.out===-1?(x.state==="ok"?(x.est&&x.est.length?1:0):2):3;
-  idx.sort((a,b)=>{const ra=rank(R.fate[a]),rb=rank(R.fate[b]);if(ra!==rb)return ra-rb;const sa=TR[a]._score??-1,sb=TR[b]._score??-1;if(sa!==sb)return sb-sa;return (triVal(TR[b],"ageEnt")||-1)-(triVal(TR[a],"ageEnt")||-1);});
-  const lab=f.c===0?"Univers":R.steps[f.c-1].label;
-  const title=f.type==="cut"?`Éliminées par <b>${esc(lab)}</b> : ${fmt(idx.length)}`:f.c===S?`<b>Shortlist</b> : ${fmt(idx.length)} profils`:`Restantes après <b>${esc(lab)}</b> : ${fmt(idx.length)}`;
-  const finalTrunk=f.type==="trunk"&&f.c===S;
-  /* seuls les profils importés qui ne sont pas encore au tracker peuvent être envoyés au Radar */
-  const fresh=finalTrunk?idx.filter(i=>!TR[i]._cid):[];
-  const nConf=fresh.filter(i=>R.fate[i].state==="ok").length;
-  const MAXR=1000;
-  $("#focusbar").innerHTML=`<span>${title}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir à la shortlist</button>`:""}${fresh.length?`<span style="margin-left:auto;display:flex;gap:8px"><button class="btn sm dark" id="promoConf"${nConf?"":" disabled"}>Envoyer les ${fmt(nConf)} profils importés confirmés au Radar</button><button class="btn sm" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
+function renderTriList(S){
+  const host=$("#triList"),k=TFOCUS||"sl";
+  const idx=S.rows.filter(r=>r.b===k);
+  if(k==="sl"||k==="reserve")idx.sort((a,b)=>a.rank-b.rank);
+  else idx.sort((a,b)=>b.d.score-a.d.score||(a.it.name||"").localeCompare(b.it.name||""));
+  const MAXR=1000,fresh=k==="sl"?idx.filter(r=>r.it._u):[];
+  $("#focusbar").innerHTML=`<span><b>${esc(BUCKET_N[k])}</b> : ${fmt(idx.length)} société${idx.length>1?"s":""}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir à la shortlist</button>`:""}${fresh.length?`<span style="margin-left:auto"><button class="btn sm dark" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
   const u=$("#unfocusT");if(u)u.onclick=()=>{TFOCUS=null;renderFunnel();};
-  const pc=$("#promoConf");if(pc)pc.onclick=()=>promote(fresh.filter(i=>R.fate[i].state==="ok").map(i=>TR[i]));
-  const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(fresh.map(i=>TR[i]));
-  const names=trackerNames();
-  const stageN=Object.fromEntries(STAGES.map(s=>[s.id,s.n]));
-  const cols=[["Entreprise",240],["Verticale",150],["Ville",140],["Prov.",62],["Fondée",70],["Âge",66],["Âge fond.",80],["Employés",88],["CA (M$)",84],["BAIIA (M$)",92],["VE (M$)",84],["Taille",84],["Score",66],["Statut",330],["Source",170],["",150]];
+  const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(fresh.map(r=>r.it._u));
+  const ranked=k==="sl"||k==="reserve";
+  const cols=[["Rang",56],["",44],["Entreprise",230],["Verticale",190],["Rôle",104],["Ville",130],["Prov.",56],["Employés",84],["CA (M$)",150],["BAIIA (M$)",150],["VE (M$)",84],["Relève",170],["Score",62],[ranked?"Pourquoi elle est là":"Pourquoi elle est ici",400],["",130]];
   const width=cols.reduce((s,c)=>s+c[1],0);
-  const sizeCell=(p,k)=>{
-    if(!p._sz)return esc((k==="ca"?p.ca:p.eb)||"—");
-    const it=items.get(p._cid),s=k==="ca"?p.ca:p.eb;
-    return it?pvHTML(s,sizeTitle(it,D(it).sz,k==="ca"?"ca":"eb")):"—";
-  };
-  const veCell=p=>{
-    const px=num(p.px);if(px!=null)return esc(dec(px))+' <span style="color:var(--ink-3)">prix</span>';
-    if(!p._sz||!p.ve)return "—";const it=items.get(p._cid);return it?pvHTML(p.ve,sizeTitle(it,D(it).sz,"ve")):"—";
-  };
-  const rows=idx.slice(0,MAXR).map(i=>{
-    const p=TR[i],fa=R.fate[i],age=triVal(p,"ageEnt");
-    const g=fa.out>=0?"out":fa.state==="ok"?"keep":"check";
-    const act=p._cid?`<span style="font-size:11px;color:var(--ink-3)">${esc(stageN[p._stage]||"Tracker")}</span><button class="btn sm" data-open="${esc(p._cid)}" aria-label="Ouvrir la fiche de ${esc(p.n)}">Ouvrir</button>`
-      :names.has(normName(p.n))?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:"";
-    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(vlab(p.vt)||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${sizeCell(p,"ca")}</td><td class="calc">${sizeCell(p,"eb")}</td><td class="calc">${veCell(p)}</td><td class="calc">${esc(roleOf(p)||"—")}</td><td class="calc">${p._score==null?"—":p._score}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${act}</div></td></tr>`;
+  const rg=(it,d,key)=>{const s=d.sz[key];return s?`${pvHTML(s,sizeTitle(it,d.sz,key))} <span class="rg">${fmtM(s.lo)}–${fmtM(s.hi)}</span>`:"—";};
+  const rows=idx.slice(0,MAXR).map(r=>{
+    const it=r.it,d=r.d,f=d.f,g=r.b==="sl"?"keep":r.b==="grise"||r.b==="reserve"?"check":"out";
+    const vp=pvOf(it,"verticale")==="verifie"?"v":"e";
+    const act=it._u?(r.b==="sl"?`<button class="btn sm dark" data-promo="${esc(it.id)}">→ Radar</button>`:""):`<span style="font-size:11px;color:var(--ink-3)">${esc(STAGE_N[it.stage]||"")}</span><button class="btn sm" data-open="${esc(it.id)}" aria-label="Ouvrir la fiche de ${esc(it.name)}">Ouvrir</button>`;
+    return `<tr class="${g}"><td class="calc">${r.rank||"—"}</td><td class="calc">${r.tier?`<span class="tier ${r.tier}">${r.tier}</span>`:""}</td><td class="calc"><b>${esc(it.name)}</b></td><td class="calc"><span class="pv ${vp}" title="${vp==="v"?"Verticale vérifiée":"Verticale estimée"}${it.src&&it.src.verticale?" · "+esc(it.src.verticale):""}">${vp==="v"?esc(vlab(it.verticale))+" ✓":"≈ "+esc(vlab(it.verticale))}</span></td><td class="calc">${esc(f.role||"—")}</td><td class="calc">${esc(it.ville||"—")}</td><td class="calc">${esc(it.province||"—")}</td><td class="calc">${d.sz.emp?`<span class="pv ${d.sz.emp.p}">${d.sz.emp.p==="v"?esc(it.employes)+" ✓":"≈ "+esc(it.employes)}</span>`:"—"}</td><td class="calc">${rg(it,d,"ca")}</td><td class="calc">${rg(it,d,"eb")}</td><td class="calc">${d.sz.ve?pvHTML(d.sz.ve,sizeTitle(it,d.sz,"ve")):"—"}</td><td class="calc">${d.rel.p?`<span class="pv ${d.rel.p}">${d.rel.p==="v"?esc(d.rel.txt)+" ✓":"≈ "+esc(d.rel.txt)}</span>`:esc(d.rel.txt)}</td><td class="calc" title="${esc(scoreTitle(d))}">${d.score}</td><td class="calc why">${esc(f.z==="passe"?whyLine(it,d):f.why)}</td><td><div class="act">${act}</div></td></tr>`;
   }).join("");
-  host.innerHTML=`<div class="sheet-wrap" style="--stick:240px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map((c,i)=>`<th${i===0?' class="stk" style="left:0;top:0"':' style="top:0"'}>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
-  $$("[data-promo]",host).forEach(b=>b.onclick=()=>promote([TR[+b.dataset.promo]]));
+  host.innerHTML=`<div class="sheet-wrap" style="--stick:0px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map(c=>`<th style="top:0">${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
+  $$("[data-promo]",host).forEach(b=>b.onclick=()=>{const r=S.rows.find(x=>x.it.id===b.dataset.promo);if(r)promote([r.it._u]);});
   $$("[data-open]",host).forEach(b=>b.onclick=()=>openTicket(b.dataset.open));
   updateFades($(".sheet-scroll",host));
 }
+function trackerNames(){return new Set(all().map(it=>normName(it.name)).filter(n=>n.length>2));}
 async function promote(list){
   if(!db){toast("Base indisponible.","err");return;}
   const names=trackerNames();let add=[],skip=0;
@@ -1966,7 +1872,7 @@ async function promote(list){
     const nn=normName(p.n);
     if(names.has(nn)){skip++;return;}
     names.add(nn);
-    add.push(normalize({exclusion:p.x,name:p.n,neq:p.neq,ville:p.v,province:p.p,region:p.r,soussecteur:p.s,verticale:p.vt,fondation:p.f,employes:p.e,ca:p.ca,baiia:p.eb,prix:p.px,ageFond:p.ad,site:p.site,source:p.src||p._lot,notes:"Shortlist du tri, lot « "+p._lot+" »."},"radar"));
+    add.push(normalize({exclusion:p.x,name:p.n,neq:p.neq,ville:p.v,province:p.p,region:p.r,soussecteur:p.s,verticale:p.vt,fondation:p.f,employes:p.e,ca:p.ca,baiia:p.eb,prix:p.px,ageFond:p.ad,site:p.site,source:p.src||p._lot,notes:"Shortlist de l'entonnoir, lot « "+p._lot+" »."},"radar"));
   });
   if(add.length>300){toast("300 au maximum par envoi : les 300 premières partent au Radar.","err");add=add.slice(0,300);}
   const ok=await writeMany(add,"Envoi au Radar");
@@ -1984,13 +1890,35 @@ function renderLots(){
   });
 }
 function renderFunnel(){
-  const R=TRES=runTri();
-  $("#triIns").innerHTML=triInsights(R).map(x=>`<div class="ins ${x.g}">${x.t}</div>`).join("");
-  renderTriSankey(R);
-  renderSteps(R);
-  renderTriList(R);
+  const S=shortlist();
+  $("#triIns").innerHTML=triInsights(S).map(x=>`<div class="ins ${x.g}">${x.t}</div>`).join("");
+  renderFSteps(S);
+  renderTript(S);
+  renderHyp();
+  renderTriList(S);
   renderLots();
 }
+$("#steps").addEventListener("click",e=>{const r=e.target.closest("[data-fk]");if(!r)return;const k=r.dataset.fk;TFOCUS=k==="sl"||TFOCUS===k?null:k;renderFunnel();});
+$("#steps").addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const r=e.target.closest("[data-fk]");if(!r)return;e.preventDefault();r.click();});
+/* Copie complète de l'entonnoir (données, hypothèses, résultat) : sert à l'export vers un classeur. */
+window.basaltExport=function(){
+  const S=shortlist(),m=hypImpacts();
+  return {
+    date:new Date().toISOString(),year:YEAR,cfg:CFG,disp:BENCH_DISP,agroRef:AGRO_REF,stats:S.st,
+    verts:THESE_VERTS.map(v=>({v,label:vlab(v),on:vertsOn().includes(v),pts:hypGet(CFG,"vertPts."+v),floor:ebFloor({verticale:v}),...(S.tri.get(v)||{slN:0,slC:0,rN:0,rC:0,g:0})})),
+    hyp:hypSorted().map(h=>({id:hypId(h),k:h.k,n:h.n,u:h.u,st:h.st,v:hypGet(CFG,h.k),alt:h.alt==null?null:h.alt,bool:!!h.bool,src:hypSrc(h),conf:hypConf(h),impact:impactTxt(h,m.get(h.k)),chg:m.has(h.k)?m.get(h.k).chg:null})),
+    info:HYP_INFO.map((h,i)=>({id:"H"+(HYP.length+i+1),...h})),
+    bench:BENCH.map(b=>({...b,mc:margeC(b),n:S.rows.filter(r=>r.d.sz.b&&r.d.sz.b.id===b.id).length})),
+    rows:S.rows.map(r=>{
+      const it=r.it,d=r.d,sz=d.sz,g=x=>x?{lo:x.lo,mid:x.mid,hi:x.hi,p:x.p}:null;
+      return {id:it.id,name:it.name,verticale:it.verticale,vp:pvOf(it,"verticale")==="verifie"?"v":"e",sous:it.soussecteur||"",ville:it.ville||"",province:it.province||"",canal:it.canal||"",stage:it.stage||"",site:it.site||"",
+        exclusion:it.exclusion||"",bench:sz.b?sz.b.id:"",emp:sz.emp?g(sz.emp):null,empTxt:it.employes==null?"":String(it.employes),caIn:rng(it.ca),caV:pvOf(it,"ca")==="verifie",ebIn:rng(it.baiia),ebV:pvOf(it,"baiia")==="verifie",
+        fondation:num(it.fondation),age:d.age,ageFond:num(it.ageFond),raison:it.raison||"",fit:it.fit||"",
+        ca:g(sz.ca),eb:g(sz.eb),ve:g(sz.ve),gap:sz.ca&&sz.ca.gap||1,
+        b:r.b,z:d.f.z,st:d.f.st||"",why:d.f.z==="passe"?whyLine(it,d):d.f.why,role:d.f.role||"",bas:!!d.f.bas,rel:d.rel.txt,relP:d.rel.p,score:d.score,parts:d.parts,rank:r.rank,tier:r.tier};
+    }),
+  };
+};
 
 /* ---------- import de profils ---------- */
 const UFIELDS=[
@@ -2141,10 +2069,9 @@ $("#univFile").addEventListener("change",async e=>{
 function renderStats(){
   const c=st=>inStage(st).length;
   const radarKeep=inStage("radar").filter(it=>D(it).group==="keep").length;
-  const R=(items.size||UROWS.length)?runTri():null;
-  const short=R?R.cols[R.cols.length-1]:null;
+  const R=(items.size||UROWS.length)?shortlist().st:null;
   const tiles=[
-    {n:"Univers",v:fmt(R?R.N:0),s:R?fmt(short.ok+short.unk)+" en shortlist après le tri":"cibles et profils importés"},
+    {n:"Base",v:fmt(R?R.N:0),s:R?fmt(R.sl)+" en shortlist, "+fmt(R.grise)+" en zone grise":"cibles et profils importés"},
     {n:"Radar",v:c("radar"),s:radarKeep+" retenue"+(radarKeep>1?"s":"")+" par les filtres"},
     {n:"Backlog",v:c("backlog"),s:"à contacter"},
     {n:"Envois",v:c("envoye"),t:50},
@@ -2189,7 +2116,6 @@ function renderAll(){
 }
 function isDirty(){
   const ae=document.activeElement;
-  if(ae&&ae.closest&&ae.closest("#steps")&&ae.tagName==="INPUT"&&ae.type!=="checkbox")return true;
   if(!ae||!ae.classList||!ae.classList.contains("cell")||ae.tagName==="SELECT")return false;
   const it=items.get(ae.dataset.id);if(!it)return false;
   const v=it[ae.dataset.k];
@@ -2472,24 +2398,30 @@ $("#acPw").addEventListener("submit",async e=>{
 });
 
 /* ---------- thèse ---------- */
-const TH=["caMin","caMax","ebMin","ebMax","addonCaMin","addonEbMin","multMax"];
 function fillThese(c){
-  TH.forEach(k=>$("#th-"+k).value=String(c[k]).replace(".",","));
-  const fl=c.ebMinV||{};
-  $("#thVert").innerHTML=THESE_VERTS.map((v,i)=>`<div class="f"><label for="th-v${i}">${esc(vlab(v))}</label><input id="th-v${i}" data-vk="${esc(v)}" inputmode="decimal" value="${esc(String(Number.isFinite(fl[v])?fl[v]:c.ebMin).replace(".",","))}"></div>`).join("");
-  $("#thProv").innerHTML=PROVINCES.map(p=>`<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" value="${p}" style="width:auto"${c.provinces.includes(p)?" checked":""}> ${p==="Autre"?"Autres provinces":p}</label>`).join("");
+  $("#thList").innerHTML=HYP.map(h=>{
+    const o=(c.hyp&&c.hyp[h.k])||{},id="th-"+hypId(h);
+    return `<div class="hrow"><span class="hid">${hypId(h)}</span><label for="${id}">${esc(h.n)}<small>${esc(h.st)}</small></label><div class="hv"><input id="${id}" data-hk="${esc(h.k)}" inputmode="decimal" value="${esc(dec(hypGet(c,h.k)))}"${h.ro?" disabled":""}><span>${esc(h.u)}</span></div><select data-hc="${esc(h.k)}" aria-label="Confiance : ${esc(h.n)}">${CONF.map(x=>`<option${x===(CONF.includes(o.conf)?o.conf:h.conf)?" selected":""}>${x}</option>`).join("")}</select><textarea data-hs="${esc(h.k)}" aria-label="Source : ${esc(h.n)}">${esc(o.src||h.src)}</textarea></div>`;
+  }).join("");
 }
 $("#btnThese").addEventListener("click",()=>{fillThese(CFG);openOverlay($("#ovThese"));});
 $("#thDefault").addEventListener("click",()=>fillThese(DEFAULT_CFG));
 $("#thForm").addEventListener("submit",async e=>{
   e.preventDefault();
-  const c={};
-  for(const k of TH){const v=num($("#th-"+k).value);if(v==null){$("#th-"+k).focus();toast("Seuil invalide : "+k,"err");return;}c[k]=v;}
-  c.ebMinV={};
-  for(const el of $$("#thVert input")){const v=num(el.value);if(v==null){el.focus();toast("Plancher invalide : "+vlab(el.dataset.vk),"err");return;}c.ebMinV[el.dataset.vk]=v;}
-  c.provinces=$$("#thProv input:checked").map(x=>x.value);
-  if(!db){toast("Base indisponible : seuils non enregistrés.","err");return;}
-  try{await db.doc("config/these").set(c);CFG={...DEFAULT_CFG,...c};closeOverlay($("#ovThese"));DER=new Map();renderAll();toast("Seuils enregistrés. Verdicts recalculés.");}
+  let c={...CFG};const hyp={};
+  for(const h of HYP){
+    const el=$(`#thList [data-hk="${CSS.escape(h.k)}"]`);
+    if(!h.ro){
+      const v=num(el.value);
+      if(v==null||v<0){el.focus();toast("Valeur invalide : "+h.n,"err");return;}
+      c=hypSet(c,h.k,h.bool?(v?1:0):v);
+    }
+    const src=str($(`#thList [data-hs="${CSS.escape(h.k)}"]`).value).slice(0,500),conf=$(`#thList [data-hc="${CSS.escape(h.k)}"]`).value;
+    if((src&&src!==h.src)||conf!==h.conf)hyp[h.k]={src:src||h.src,conf};
+  }
+  c.hyp=hyp;
+  if(!db){toast("Base indisponible : hypothèses non enregistrées.","err");return;}
+  try{await db.doc("config/these").set(clean(c));CFG={...DEFAULT_CFG,...c};closeOverlay($("#ovThese"));DER=new Map();renderAll();toast("Hypothèses enregistrées. Entonnoir recalculé.");}
   catch(err){writeErr(err);}
 });
 
