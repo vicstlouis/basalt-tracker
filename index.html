@@ -397,6 +397,8 @@ a.site.est{color:var(--est);font-style:italic}
 .modal .btn.danger{color:#F0A79B}
 .modal .btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
 .modal .x{background:none;border:0;color:var(--rock-ink-3);font-size:20px;line-height:1;padding:2px 6px}
+.linkbtn{background:none;border:0;padding:0;color:var(--rock-ink-3);font:inherit;text-decoration:underline;cursor:pointer}
+.linkbtn:hover{color:var(--amber-rock)}
 .modal .note{font-size:11.5px;color:var(--rock-ink-3);margin:4px 0 0}
 
 .ingest input[type=text]{background:var(--rock-2);border:1px solid var(--rock-rule);color:var(--rock-ink);border-radius:7px;padding:6px 9px;font-size:12px;min-width:250px}
@@ -707,14 +709,14 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
 <div class="overlay" id="ovLogin" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lgTitle" style="max-width:420px">
     <form id="lgForm" novalidate>
-      <div class="mh"><div><h2 id="lgTitle">Connexion</h2><div class="derived">Accès réservé à l'équipe. Demande un accès à un administrateur du tracker.</div></div></div>
+      <div class="mh"><div><h2 id="lgTitle">Accès protégé</h2><div class="derived">Entre le mot de passe de la plateforme. C'est le même pour toute l'équipe.</div></div></div>
       <div class="fg" style="grid-template-columns:1fr">
-        <div class="f"><label for="lg-email">Courriel</label><input id="lg-email" type="email" autocomplete="username" required spellcheck="false"></div>
+        <div class="f" id="lgEmailRow" hidden><label for="lg-email">Courriel</label><input id="lg-email" type="email" autocomplete="username" spellcheck="false"></div>
         <div class="f"><label for="lg-pass">Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password"></div>
       </div>
       <p class="note" id="lgMsg" role="status" style="min-height:18px"></p>
-      <div class="mf"><button type="button" class="btn" id="lgLink">Recevoir un lien par courriel</button><div class="right"><button type="submit" class="btn go" id="lgGo">Se connecter</button></div></div>
-      <p class="note">Pas de mot de passe ? Entre ton courriel et demande un lien. Tu pourras ensuite choisir un mot de passe dans « Comptes et accès ».</p>
+      <div class="mf"><button type="button" class="btn" id="lgLink" hidden>Recevoir un lien par courriel</button><div class="right"><button type="submit" class="btn go" id="lgGo">Entrer</button></div></div>
+      <p class="note"><button type="button" class="linkbtn" id="lgPerso">J'ai un compte personnel (administrateur)</button></p>
     </form>
   </div>
 </div>
@@ -1300,6 +1302,10 @@ function makeDb(){
     doc:p=>{const i=p.lastIndexOf("/");return docRef(p.slice(0,i),p.slice(i+1));},
   };
 }
+/* Accès partagé : un seul compte et un seul mot de passe pour toute l'équipe, comme un fichier protégé.
+   L'écran de connexion ne demande que le mot de passe; un compte personnel reste possible pour l'administration. */
+const SHARED_EMAIL="acces-partage@basalt-tracker.app";
+const loginPerso=()=>!$("#lgEmailRow").hidden;
 const PAGE_URL=location.origin+location.pathname;   // adresse où ramènent les liens de connexion
 let ME={email:"",role:null};
 const lock=on=>document.body.classList.toggle("locked",on);
@@ -1326,11 +1332,11 @@ function showLogin(msg){
   lock(true);
   setDbState("err","Connexion requise");$("#btnLogout").hidden=true;$("#btnAcces").hidden=true;
   $("#lgMsg").textContent=msg||"";
-  $("#ovLogin").hidden=false;setTimeout(()=>$("#lg-email").focus(),0);
+  $("#ovLogin").hidden=false;setTimeout(()=>$(loginPerso()?"#lg-email":"#lg-pass").focus(),0);
 }
 function authMsg(error){
   const c=String(error&&error.code||""),m=String(error&&error.message||error||"");
-  if(c==="invalid_credentials"||/invalid login/i.test(m))return "Courriel ou mot de passe invalide.";
+  if(c==="invalid_credentials"||/invalid login/i.test(m))return loginPerso()?"Courriel ou mot de passe invalide.":"Mot de passe invalide.";
   if(c==="email_not_confirmed")return "Ce compte n'est pas encore activé : demande un lien de connexion.";
   if(c==="otp_disabled"||c==="signup_disabled"||c==="user_not_found"||/signups not allowed/i.test(m))return "Ce courriel n'a pas de compte. Demande un accès à un administrateur du tracker.";
   if(/rate_limit/.test(c)||(error&&error.status===429))return "Trop de demandes : attends quelques minutes avant de redemander un lien.";
@@ -1340,15 +1346,21 @@ function authMsg(error){
 $("#lgForm").addEventListener("submit",async e=>{
   e.preventDefault();
   if(!sb)return;
-  const email=str($("#lg-email").value),pass=$("#lg-pass").value;
-  if(!email||!$("#lg-email").checkValidity()){$("#lgMsg").textContent="Entre ton courriel.";$("#lg-email").focus();return;}
-  if(!pass){$("#lgMsg").textContent="Entre ton mot de passe, ou demande un lien de connexion par courriel.";$("#lg-pass").focus();return;}
+  const perso=loginPerso(),email=perso?str($("#lg-email").value):SHARED_EMAIL,pass=$("#lg-pass").value;
+  if(perso&&(!email||!$("#lg-email").checkValidity())){$("#lgMsg").textContent="Entre ton courriel.";$("#lg-email").focus();return;}
+  if(!pass){$("#lgMsg").textContent=perso?"Entre ton mot de passe, ou demande un lien de connexion par courriel.":"Entre le mot de passe de la plateforme.";$("#lg-pass").focus();return;}
   const btn=$("#lgGo");btn.disabled=true;$("#lgMsg").textContent="Connexion…";
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false;
   if(error){$("#lgMsg").textContent=authMsg(error);return;}
   $("#lg-pass").value="";$("#lgMsg").textContent="";
   startDb(data.session);
+});
+$("#lgPerso").addEventListener("click",()=>{
+  const on=$("#lgEmailRow").hidden;
+  $("#lgEmailRow").hidden=!on;$("#lgLink").hidden=!on;$("#lgMsg").textContent="";
+  $("#lgPerso").textContent=on?"Revenir au mot de passe de la plateforme":"J'ai un compte personnel (administrateur)";
+  $(on?"#lg-email":"#lg-pass").focus();
 });
 $("#lgLink").addEventListener("click",async()=>{
   if(!sb)return;
@@ -1374,7 +1386,7 @@ async function startDb(session){
   try{const {data,error}=await sb.rpc("mon_role");if(!error&&(data==="admin"||data==="membre"))role=data;}catch(e){}
   ME={email,role};
   $("#ovLogin").hidden=true;lock(false);
-  $("#btnLogout").hidden=false;$("#btnLogout").title="Connecté : "+email;
+  $("#btnLogout").hidden=false;$("#btnLogout").title="Connecté : "+(email===SHARED_EMAIL?"accès partagé":email);
   $("#btnAcces").hidden=false;
   db=makeDb();
   const timer=setTimeout(()=>{if(!dbReady)setDbState("err","La base ne répond pas encore. Les données affichées peuvent être en retard.");},10000);
@@ -2381,7 +2393,7 @@ async function showLinkBox(email,lien){
 }
 $("#btnAcces").addEventListener("click",()=>{
   const admin=ME.role==="admin";
-  $("#acMe").textContent="Connecté : "+ME.email+(ME.role?" · "+ROLE_LBL[ME.role]:"");
+  $("#acMe").textContent=ME.email===SHARED_EMAIL?"Connecté avec le mot de passe partagé. Le changer ici le change pour toute l'équipe.":"Connecté : "+ME.email+(ME.role?" · "+ROLE_LBL[ME.role]:"");
   $("#acAdmin").hidden=!admin;$("#acLinkBox").hidden=true;$("#acLinkVal").value="";accMsg("");
   $("#acPw").reset();$("#pw-user").value=ME.email;
   openOverlay($("#ovAcces"));
