@@ -1053,8 +1053,8 @@ async function writeMany(list,label){
    Une seule table « docs » (collection, id, data jsonb) qui reproduit les collections du tracker :
    cibles/<id>, univers/<lot>, config/tri, config/these, config/benchmarks. Schéma et règles d'accès : supabase.sql.
    La clé publishable est publique par conception : ce sont les règles RLS (membres connectés seulement) qui protègent les données. */
-const SB_URL="https://VOTRE-PROJET.supabase.co";   // Supabase → Project Settings → Data API → Project URL
-const SB_KEY="VOTRE-CLE-PUBLISHABLE";               // Supabase → Project Settings → API Keys → publishable key (sb_publishable_…)
+const SB_URL="https://cavcxktxltxksxzpauzi.supabase.co";   // Supabase → Project Settings → Data API → Project URL
+const SB_KEY="sb_publishable_Cf6wxZ0PTG-twGppTR1dFA_Uq24c_bu";               // Supabase → Project Settings → API Keys → publishable key (sb_publishable_…)
 let sb=null;
 async function getCap(name){return null;} // les capacités claude.ai (dont l'extraction par Claude) n'existent pas hors de claude.ai
 function sbErr(e){
