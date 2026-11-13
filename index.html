@@ -631,7 +631,11 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
       </fieldset>
       <fieldset><legend>Contact et envoi</legend>
         <div class="fg">
-          <div class="f w2"><label for="t-contactName">Point de contact</label><input id="t-contactName" placeholder="Non identifié"></div>
+          <div class="f w2"><label for="t-proprio">Propriétaire ou dirigeant</label><input id="t-proprio" placeholder="Nom, titre"></div>
+          <div class="f w2"><label for="t-courriel">Courriel professionnel</label><input id="t-courriel" placeholder="prenom.nom@entreprise.ca"></div>
+          <div class="f w2"><label for="t-tel">Téléphone</label><input id="t-tel" placeholder="514 555-0100"></div>
+          <div class="f w2"><label for="t-cell">Cellulaire</label><input id="t-cell" placeholder="514 555-0100"></div>
+          <div class="f w2"><label for="t-contactName">Autre contact (conseiller, courtier)</label><input id="t-contactName" placeholder="Non identifié"></div>
           <div class="f w2"><label for="t-contactEmail">Courriel</label><input id="t-contactEmail" placeholder="nom@entreprise.ca"></div>
           <div class="f"><label for="t-sendDate">Date d'envoi</label><input type="date" id="t-sendDate"></div>
           <div class="f"><label for="t-channel">Moyen</label><select id="t-channel"><option value="">—</option><option>Appel</option><option>Email</option><option>LinkedIn</option><option>Référé</option></select></div>
@@ -793,22 +797,20 @@ const ROLES=["Plateforme","Plateforme ou add-on","Add-on","Veille","Partenariat 
 const STAGES=[{id:"radar",n:"Radar"},{id:"backlog",n:"Backlog"},{id:"envoye",n:"Envoyé"},{id:"secondcall",n:"2e appel"},{id:"pursuit",n:"Démarche"},{id:"acquisition",n:"Acquisition"},{id:"pass",n:"Pass"}];
 const STAGE_N=Object.fromEntries(STAGES.map(s=>[s.id,s.n]));
 const SUIVI=[{id:"secondcall",n:"2e appel",target:20},{id:"pursuit",n:"Démarche",target:10},{id:"acquisition",n:"Acquisition",target:2},{id:"pass",n:"Pass / hors marché",target:null}];
-const VERDICTS=[{n:"Passe",g:"keep"},{n:"Plus petite",g:"keep"},{n:"À valider",g:"check"},{n:"Rejet · taille",g:"out"},{n:"Rejet · prix",g:"out"},{n:"Rejet · secteur",g:"out"},{n:"Rejet · géo",g:"out"},{n:"Rejet · B2C",g:"out"},{n:"Rejet · propriété",g:"out"}];
+const VERDICTS=[{n:"Passe",g:"keep"},{n:"À valider",g:"check"},{n:"Rejet · taille",g:"out"},{n:"Rejet · prix",g:"out"},{n:"Rejet · secteur",g:"out"},{n:"Rejet · géo",g:"out"},{n:"Rejet · B2C",g:"out"},{n:"Rejet · propriété",g:"out"}];
 const VERDICT_G=Object.fromEntries(VERDICTS.map(v=>[v.n,v.g]));
 const GROUPS=[{id:"keep",n:"Retenue",icon:"✓",c:"var(--keep)"},{id:"check",n:"À valider",icon:"?",c:"var(--check)"},{id:"out",n:"Rejet",icon:"✕",c:"var(--out)"}];
 const GROUP_N=Object.fromEntries(GROUPS.map(g=>[g.id,g.n]));
-/* BAIIA minimum de la taille visée par le fonds, par secteur (modifiable dans « Hypothèses »). */
+/* Taille : une seule fourchette de CA. Le BAIIA est estimé et affiché, mais il ne retire aucune société. */
 const GROWTH_REF_DEFAULT=4.5;   // moyenne de la fabrication au Canada, 2019-2024 (voir GROWTH)
-const DEFAULT_CFG={caMin:20,caMax:35,ebMin:2,ebMax:5,ebMinV:{"ÉNER":3,"AGRO":2.5,"SV":2},addonCaMin:5,addonEbMin:0.5,multMax:7,veMax:35,
+const DEFAULT_CFG={caMin:15,caMax:50,multMax:7,
   margeAgro:7,rpeAdj:100,releveEnt:30,croissMin:GROWTH_REF_DEFAULT,croissDual:1,provinces:["QC","ON"],verts:THESE_VERTS.slice(),hyp:{}};
 let CFG={...DEFAULT_CFG};
-function ebFloor(it){const m=CFG.ebMinV||{},v=m[it&&it.verticale];return Number.isFinite(v)?v:CFG.ebMin;}
 function vertsOn(){return Array.isArray(CFG.verts)?CFG.verts:THESE_VERTS;}
 /* Marge centrale : pour l'agroalimentaire, la marge de référence de la thèse remplace celle de Statistique Canada (7,5 %); l'écart de la sous-industrie est conservé. */
 const AGRO_REF=7.5;
 function margeC(b){const a=Number(CFG.margeAgro);return b.v==="AGRO"&&Number.isFinite(a)?Math.max(0,b.m[1]+a-AGRO_REF):b.m[1];}
 function rpeOf(b,prov){const a=Number(CFG.rpeAdj);return (prov==="ON"?b.on:b.qc)*(Number.isFinite(a)&&a>0?a/100:1);}
-function floorsTxt(c){const m=c.ebMinV||{};return THESE_VERTS.map(v=>`${vlab(v)} ${String(Number.isFinite(m[v])?m[v]:c.ebMin).replace(".",",")}`).join(", ");}
 const YEAR=new Date().getFullYear();
 
 /* ---------- hypothèses par industrie (sourcées, modifiables) ----------
@@ -896,7 +898,7 @@ function scianOf(b){
 /* g : croissance de l'industrie (% par an). du : l'industrie a des applications civiles et militaires. */
 DEFAULT_BENCH.forEach(b=>{const c=scianOf(b);b.g=c&&GROWTH[c]!=null?GROWTH[c]:null;b.du=b.v==="Défense";});
 let BENCH=DEFAULT_BENCH.map(b=>({...b,m:[...b.m],x:[...b.x]}));
-const PROV_KEYS=["verticale","site","employes","ca","baiia","fondation","ageFond","prix"];
+const PROV_KEYS=["verticale","site","employes","ca","baiia","fondation","ageFond","prix","proprio","tel","cell","courriel"];
 const PROV_LAB={verticale:"Secteur",site:"Site web",employes:"Employés",ca:"CA (M$)",baiia:"BAIIA (M$)",fondation:"Fondation",ageFond:"Âge du fondateur",prix:"Prix demandé (M$)"};
 function validBench(b){
   const n3=a=>Array.isArray(a)&&a.length===3&&a.every(x=>Number.isFinite(+x));
@@ -1004,11 +1006,10 @@ function verdictOf(it,sz){
   if(it.mix==="B2C dominant")return "Rejet · B2C";
   if(it.transaction==="Minoritaire")return "Rejet · propriété";
   const ca=sz?sz.ca:rng(it.ca),eb=sz?sz.eb:rng(it.baiia);
-  if(ca&&(ca.lo>c.caMax||ca.hi<c.addonCaMin))return "Rejet · taille";
-  if(eb&&(eb.lo>c.ebMax||eb.hi<c.addonEbMin))return "Rejet · taille";
+  if(ca&&ca.hi<c.caMin)return "Rejet · taille";
   const m=multOf(it,sz);
   if(m!=null&&m>c.multMax)return "Rejet · prix";
-  if((ca&&ca.hi<c.caMin)||(eb&&eb.hi<ebFloor(it)))return "Plus petite";
+  if(ca&&ca.mid>c.caMax)return "À valider";
   if(!ca&&!eb)return "À valider";
   if(!it.province||!it.verticale||it.verticale==="À classer")return "À valider";
   return "Passe";
@@ -1017,7 +1018,7 @@ const COMPLETE_KEYS=["verticale","ville","province","fondation","employes","ca",
 function completOf(it){
   let n=0;
   COMPLETE_KEYS.forEach(k=>{
-    if(k==="contact"){if(it.contactName||it.contactEmail)n++;return;}
+    if(k==="contact"){if(it.proprio||it.tel||it.cell||it.courriel||it.contactName||it.contactEmail)n++;return;}
     const v=it[k];if(v!=null&&v!==""&&v!=="À classer"&&v!=="À évaluer")n++;
   });
   return n/COMPLETE_KEYS.length;
@@ -1050,7 +1051,7 @@ function croissOf(it,b){
   return {z:"rejet",dual,g,why:`Croissance trop faible : ${pc(g)} de 2019 à 2024, sous le seuil de ${pc(seuil)}, industrie ${ind}. Aucune application militaire connue. Source : ${GROWTH_SRC}.`};
 }
 /* Place dans l'entonnoir. z : « rejet » (st = filtre qui la retire), « grise » (à vérifier) ou « passe » (retenue).
-   cible : la société a la taille visée par le fonds (CA et BAIIA centraux au-dessus des minimums visés). */
+   Taille : seul le CA compte. Sous la fourchette, la société est retirée; au-dessus, elle reste « à vérifier ». */
 function funnelOf(it,sz){
   const c=CFG,M=x=>fmtM(x)+" M$";
   if(it.exclusion)return {z:"rejet",st:"excl",why:"Exclue : "+it.exclusion.toLowerCase()};
@@ -1061,15 +1062,10 @@ function funnelOf(it,sz){
   if(!(c.provinces||[]).includes(it.province))return {z:"rejet",st:"geo",why:"Hors "+(c.provinces||[]).join(" et ")};
   const ca=sz.ca,eb=sz.eb,ve=sz.ve;
   if(!ca||!eb)return {z:"grise",why:"Taille inconnue : ni employés, ni CA"};
-  if(ca.hi<c.addonCaMin)return {z:"rejet",st:"taille",why:`Trop petite : CA d'au plus ${M(ca.hi)}, sous ${M(c.addonCaMin)}`};
-  if(ca.lo>c.caMax)return {z:"rejet",st:"taille",why:`Trop grande : CA d'au moins ${M(ca.lo)}, au-dessus de ${M(c.caMax)}`};
-  if(eb.hi<c.addonEbMin)return {z:"rejet",st:"taille",why:`Trop petite : BAIIA d'au plus ${M(eb.hi)}, sous ${M(c.addonEbMin)}`};
-  if(eb.lo>c.ebMax)return {z:"rejet",st:"taille",why:`Trop grande : BAIIA d'au moins ${M(eb.lo)}, au-dessus de ${M(c.ebMax)}`};
-  if(ve&&ve.lo>c.veMax)return {z:"rejet",st:"taille",why:`Trop chère : valeur d'au moins ${M(ve.lo)}, au-dessus de ${M(c.veMax)}`};
-  const g=(lab,s,lo,hi)=>s.mid<lo?`${lab} estimé à ${M(s.mid)}, sous ${M(lo)}, mais la fourchette monte à ${M(s.hi)}`:s.mid>hi?`${lab} estimé à ${M(s.mid)}, au-dessus de ${M(hi)}, mais la fourchette descend à ${M(s.lo)}`:"";
-  const gw=g("CA",ca,c.addonCaMin,c.caMax)||g("BAIIA",eb,c.addonEbMin,c.ebMax)||(ve&&ve.mid>c.veMax?`Valeur estimée à ${M(ve.mid)}, au-dessus de ${M(c.veMax)}, mais la fourchette descend à ${M(ve.lo)}`:"");
-  if(gw)return {z:"grise",why:gw};
-  const gr=croissOf(it,sz.b),cible=ca.mid>=c.caMin&&eb.mid>=ebFloor(it);
+  if(ca.hi<c.caMin)return {z:"rejet",st:"taille",why:`Trop petite : CA d'au plus ${M(ca.hi)}, sous ${M(c.caMin)}`};
+  if(ca.mid<c.caMin)return {z:"grise",why:`CA estimé à ${M(ca.mid)}, sous ${M(c.caMin)}, mais la fourchette monte à ${M(ca.hi)}`};
+  if(ca.mid>c.caMax)return {z:"grise",why:`CA estimé à ${M(ca.mid)}, au-dessus de ${M(c.caMax)} : à garder seulement si le potentiel est intéressant`};
+  const gr=croissOf(it,sz.b),cible=true;
   if(gr.z!=="passe")return {z:gr.z,st:"croiss",why:gr.why,gr};
   return {z:"passe",cible,gr};
 }
@@ -1078,7 +1074,7 @@ function scoreOf(it,f,rel,sz){
   const gr=f.gr||croissOf(it,sz.b);
   const croiss=(gr.fort?15:gr.g!=null&&gr.g>=Number(CFG.croissMin)-1?8:0)+(gr.dual?10:0);
   const succ=Math.round(rel.pts*25/35);
-  const taille=f.z==="passe"?(f.cible?20:10):f.z==="grise"?5:0;
+  const taille=f.z==="passe"?20:f.z==="grise"?5:0;
   const fit={"Fit fort":15,"Fit modéré":10,"Fit faible":2}[it.fit];
   const fitP=fit==null?6:fit;
   const ca=sz.ca,fiab=!ca?0:ca.p==="v"?15:(ca.parts||[]).length>1?(ca.gap>2?0:10):6;
@@ -1161,6 +1157,7 @@ function normalize(t,defStage){
     fit:pick(FITS,t.fit)||b.fit||"À évaluer",
     priorite:pick(PRIORITES,t.priorite),role:pick(ROLES,t.role)||mapRole(t.role),ageFond:num(t.ageFond),
     canal,sources:Array.isArray(t.sources)?t.sources.map(str).filter(Boolean):(canal?[canal]:[]),
+    proprio:str(t.proprio),tel:str(t.tel),cell:str(t.cell),courriel:str(t.courriel),
     contactName:str(t.contactName),contactEmail:str(t.contactEmail),
     bridge:str(t.bridge),owner:str(t.owner),flags,slide:str(t.slide),notes:str(t.notes),raw:str(t.raw||t.extrait),
     badgeOrigine:str(t.badgeOrigine||(t.badge&&!pick(FITS,t.badge)?t.badge:"")),source:str(t.source),
@@ -1173,7 +1170,7 @@ function normalize(t,defStage){
 function cleanProv(p){const o={};if(p&&typeof p==="object")PROV_KEYS.forEach(k=>{if(p[k]==="verifie"||p[k]==="estime")o[k]=p[k];});return o;}
 function cleanSrc(s){const o={};if(s&&typeof s==="object")PROV_KEYS.forEach(k=>{const v=str(s[k]);if(v)o[k]=v.slice(0,300);});return o;}
 function clean(it){return JSON.parse(JSON.stringify(it,(k,v)=>v===undefined?null:v));}
-const MERGE_KEYS=["bench","priorite","role","ageFond","suffix","ref","neq","site","verticale","soussecteur","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","raison","transaction","mix","recurrence","exclusion","fit","canal","contactName","contactEmail","bridge","owner","slide","notes"];
+const MERGE_KEYS=["bench","priorite","role","ageFond","suffix","ref","neq","site","verticale","soussecteur","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","raison","transaction","mix","recurrence","exclusion","fit","canal","proprio","tel","cell","courriel","contactName","contactEmail","bridge","owner","slide","notes"];
 function mergeInto(ex,nw){
   const out={...ex};
   MERGE_KEYS.forEach(k=>{const a=out[k],b=nw[k];if((a==null||a===""||a==="À classer"||a==="À évaluer")&&b!=null&&b!==""&&b!=="À classer"&&b!=="À évaluer")out[k]=b;});
@@ -1469,7 +1466,7 @@ function loadUi(){
 }
 function passF(it){
   const d=D(it);
-  if(F.q){const s=low([it.name,it.soussecteur,it.ville,it.region,it.contactName,it.notes,it.ref,it.neq].join(" "));if(!s.includes(low(F.q)))return false;}
+  if(F.q){const s=low([it.name,it.soussecteur,it.ville,it.region,it.proprio,it.contactName,it.notes,it.ref,it.neq].join(" "));if(!s.includes(low(F.q)))return false;}
   if(F.vert.size&&!F.vert.has(it.verticale))return false;
   if(F.grp.size&&!F.grp.has(d.group))return false;
   if(F.canal){if(F.canal.startsWith("tier:")){if(d.tier!==F.canal.slice(5))return false;}else if((it.canal||"")!==F.canal)return false;}
@@ -1515,7 +1512,11 @@ const COLS={
   fit:{label:"Fit",grp:"Qualification",w:106,kind:"select",opts:FITS,noBlank:true},
   recurrence:{label:"Récurrence",grp:"Qualification",w:104,kind:"select",opts:RECUR},
   canal:{label:"Canal",grp:"Qualification",w:160,kind:"select",opts:CANAL_NAMES},
-  contactName:{label:"Contact",grp:"Qualification",w:150,kind:"text",ph:"Non identifié"},
+  proprio:{label:"Propriétaire",grp:"Qualification",w:190,kind:"text",ph:"Non identifié"},
+  tel:{label:"Téléphone",grp:"Qualification",w:130,kind:"text"},
+  cell:{label:"Cellulaire",grp:"Qualification",w:130,kind:"text"},
+  courriel:{label:"Courriel pro",grp:"Qualification",w:210,kind:"text"},
+  contactName:{label:"Autre contact",grp:"Qualification",w:150,kind:"text",ph:"Non identifié"},
   contactEmail:{label:"Courriel",grp:"Qualification",w:196,kind:"text"},
   site:{label:"Site web",grp:"Qualification",w:180,kind:"text"},
   _flags:{label:"Flags",grp:"Suivi",w:64,kind:"calc"},
@@ -1524,9 +1525,9 @@ const COLS={
   _act:{label:"",grp:"Suivi",w:122,kind:"act"},
 };
 const PRESETS={
-  essentiel:["_sel","name","site","verticale","soussecteur","ville","province","_score","_verdict","employes","_ca","_eb","fondation","fit","exclusion","canal","_act"],
+  essentiel:["_sel","name","site","proprio","tel","courriel","verticale","soussecteur","ville","province","_score","_verdict","employes","_ca","_eb","fondation","fit","exclusion","canal","_act"],
   financier:["_sel","name","verticale","priorite","_score","_verdict","_ca","_eb","_ve","_age","fondation","ageFond","raison","bench","employes","ca","baiia","confTaille","prix","_mult","transaction","mix","_act"],
-  tout:["_sel","name","verticale","priorite","soussecteur","ville","province","_score","_verdict","_ca","_eb","_ve","_tier","_age","fondation","ageFond","raison","bench","employes","ca","baiia","confTaille","prix","_mult","transaction","mix","role","exclusion","fit","recurrence","canal","contactName","contactEmail","site","_flags","_complet","_jours","_act"],
+  tout:["_sel","name","verticale","priorite","soussecteur","ville","province","_score","_verdict","_ca","_eb","_ve","_tier","_age","fondation","ageFond","raison","bench","employes","ca","baiia","confTaille","prix","_mult","transaction","mix","role","exclusion","fit","recurrence","canal","proprio","tel","cell","courriel","contactName","contactEmail","site","_flags","_complet","_jours","_act"],
 };
 const PRESET_N={essentiel:"Essentiel",financier:"Financier",tout:"Toutes les colonnes"};
 function sortVal(it,k){
@@ -1647,7 +1648,7 @@ function renderSheet(key,list,emptyText){
     const d=D(it);
     html+=`<tr class="${d.group}" data-row="${esc(it.id)}">`+keys.map(k=>cellHTML(key,COLS[k],k,it,d,lefts[k])).join("")+`</tr>`;
   });
-  html+=`</tbody></table></div><div class="fb"></div><div class="sheet-foot"><span><span class="fx">ƒ</span> colonne calculée : verdict selon tes seuils (CA ${CFG.caMin}–${CFG.caMax} M$, BAIIA du plancher de la verticale à ${CFG.ebMax} M$ : ${esc(floorsTxt(CFG))}; multiple ≤ ${CFG.multMax}x), score sur 100. CA, BAIIA et VE : valeur centrale, survole pour la fourchette et le calcul.</span><span class="plegend"><span class="pv e">≈ estimé</span><span class="pv v">vérifié ✓</span><span>Tri : ${esc(COLS[st.sort]?COLS[st.sort].label:"")} ${st.dir<0?"↓":"↑"}</span></span></div></div>`;
+  html+=`</tbody></table></div><div class="fb"></div><div class="sheet-foot"><span><span class="fx">ƒ</span> colonne calculée : verdict selon tes seuils (CA ${CFG.caMin}–${CFG.caMax} M$, aucun seuil de BAIIA; multiple ≤ ${CFG.multMax}x), score sur 100. CA, BAIIA et VE : valeur centrale, survole pour la fourchette et le calcul.</span><span class="plegend"><span class="pv e">≈ estimé</span><span class="pv v">vérifié ✓</span><span>Tri : ${esc(COLS[st.sort]?COLS[st.sort].label:"")} ${st.dir<0?"↓":"↑"}</span></span></div></div>`;
   const prev=$(".sheet-scroll",host);const sl=prev?prev.scrollLeft:0,stp=prev?prev.scrollTop:0;
   host.innerHTML=html;
   const sc=$(".sheet-scroll",host);sc.scrollLeft=sl;sc.scrollTop=stp;
@@ -1703,16 +1704,8 @@ const HYP=[
   {k:"vert.Services B2B",sec:"Secteurs et provinces",n:"Garder le secteur services techniques B2B (1 = oui, 0 = non)",u:"",alt:0,bool:true,src:"Secteur sans thèse propre.",conf:"Faible"},
   {k:"vert.Manuf. niche",sec:"Secteurs et provinces",n:"Garder les autres manufacturiers : plastique, emballage, machines, métal (1 = oui, 0 = non)",u:"",alt:0,bool:true,src:"Secteur sans thèse propre. Rattachement par code d'industrie, estimé.",conf:"Faible"},
   {k:"prov.ON",sec:"Secteurs et provinces",n:"Garder l'Ontario (1 = oui, 0 = non)",u:"",alt:0,bool:true,src:"Thèse du fonds : Québec d'abord, corridor Québec-Ontario.",conf:"Moyenne"},
-  {k:"addonCaMin",sec:"Taille",n:"CA minimum pour être retenue",u:"M$",alt:10,src:"Hypothèse de travail, à valider.",conf:"Faible"},
-  {k:"caMax",sec:"Taille",n:"CA maximum",u:"M$",alt:40,src:"Thèse du fonds.",conf:"Élevée"},
-  {k:"addonEbMin",sec:"Taille",n:"BAIIA minimum pour être retenue",u:"M$",alt:1,src:"Hypothèse de travail, à valider.",conf:"Faible"},
-  {k:"ebMax",sec:"Taille",n:"BAIIA maximum",u:"M$",alt:7,src:"Thèse du fonds.",conf:"Élevée"},
-  {k:"veMax",sec:"Taille",n:"Valeur d'entreprise maximale (BAIIA × multiple)",u:"M$",alt:15,src:"BAIIA maximum × multiple maximum. À resserrer selon l'équité disponible par acquisition.",conf:"Faible"},
-  {k:"caMin",sec:"Taille visée par le fonds",n:"CA minimum de la taille visée",u:"M$",alt:18,src:"Thèse du fonds.",conf:"Élevée"},
-  {k:"ebMinV.ÉNER",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : énergie et bâtiment",u:"M$",alt:2,src:"Thèse du secteur.",conf:"Élevée"},
-  {k:"ebMinV.AGRO",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : agroalimentaire",u:"M$",alt:2,src:"Thèse du secteur.",conf:"Élevée"},
-  {k:"ebMinV.SV",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : sciences de la vie",u:"M$",alt:1.5,src:"Thèse du secteur.",conf:"Élevée"},
-  {k:"ebMin",sec:"Taille visée par le fonds",n:"BAIIA minimum de la taille visée : autres secteurs",u:"M$",alt:1.5,src:"Thèse du fonds.",conf:"Élevée"},
+  {k:"caMin",sec:"Taille",n:"CA minimum (en dessous, la société est retirée)",u:"M$",alt:5,src:"Chiffre de la direction, novembre 2026 : fourchette visée de 15 à 50 M$.",conf:"Élevée"},
+  {k:"caMax",sec:"Taille",n:"CA maximum de la fourchette (au-dessus, la société reste « à vérifier »)",u:"M$",alt:35,src:"Chiffre de la direction, novembre 2026 : au-delà de 50 M$, on n'exclut pas si le potentiel est intéressant. Aucun seuil de BAIIA : il suffit que la société soit rentable et finançable.",conf:"Élevée"},
   {k:"croissMin",sec:"Croissance",n:"Croissance minimale des revenus de l'industrie, par an",u:"%",alt:6,src:"Moyenne de la fabrication au Canada de 2019 à 2024 : 4,5 % par an (Statistique Canada, 16-10-0117-01, dollars courants). Une industrie à moins d'un point sous le seuil reste « à vérifier ».",conf:"Moyenne"},
   {k:"croissDual",sec:"Croissance",n:"Garder les industries à applications civiles et militaires même sous ce seuil (1 = oui, 0 = non)",u:"",alt:0,bool:true,src:"Dépenses de défense du Canada : 1,47 % du PIB en 2024, 2 % atteint en 2025, cible de 5 % d'ici 2035 (OTAN). La demande militaire à venir ne se voit pas encore dans les revenus de 2019 à 2024.",conf:"Moyenne"},
   {k:"margeAgro",sec:"Estimation des chiffres",n:"Marge de BAIIA de référence en transformation agroalimentaire",u:"%",alt:7.5,src:"Chiffre de la direction. Statistique Canada donne 7,5 % (33-10-0500-01, 2022-2024). L'écart de chaque sous-industrie s'y ajoute.",conf:"Moyenne"},
@@ -1720,7 +1713,7 @@ const HYP=[
   {k:"disp",sec:"Estimation des chiffres",n:"Largeur de la fourchette autour du revenu par employé (±)",u:"%",alt:40,src:"Hypothèse de travail : fourchettes larges pour ne perdre aucune cible. Se modifie dans « Hypothèses par industrie ».",conf:"Moyenne",ro:true},
   {k:"releveEnt",sec:"Score",n:"Âge de l'entreprise à partir duquel une relève est probable",u:"ans",alt:15,src:"Hypothèse de travail : l'âge de l'entreprise remplace l'âge du fondateur, inconnu.",conf:"Faible"},
 ];
-const SCORE_TXT="Score sur 100, pour trier : croissance 25 (15 si l'industrie dépasse le seuil, plus 10 pour des applications civiles et militaires), âge de l'entreprise 25 (indice de relève), taille 20 (20 si elle a la taille visée par le fonds, 10 si elle est plus petite), fit évalué 15, fiabilité des chiffres 15.";
+const SCORE_TXT="Score sur 100, pour trier : croissance 25 (15 si l'industrie dépasse le seuil, plus 10 pour des applications civiles et militaires), âge de l'entreprise 25 (indice de relève), taille 20 (CA dans la fourchette visée), fit évalué 15, fiabilité des chiffres 15.";
 const hypId=h=>"H"+(HYP.indexOf(h)+1);
 function hypGet(c,k,disp){
   if(k==="disp")return Math.round((disp==null?BENCH_DISP:disp)*100);
@@ -1730,7 +1723,7 @@ function hypGet(c,k,disp){
   if(a==="prov")return (c.provinces||[]).includes(b)?1:0;
   if(a==="vert")return (Array.isArray(c.verts)?c.verts:THESE_VERTS).includes(b)?1:0;
   const m=c[a]||{},d=DEFAULT_CFG[a]||{};
-  return Number.isFinite(m[b])?m[b]:Number.isFinite(d[b])?d[b]:c.ebMin;
+  return Number.isFinite(m[b])?m[b]:d[b];
 }
 /* Renvoie une copie de la configuration avec l'hypothèse k à la valeur v. */
 function hypSet(c,k,v){
@@ -1792,14 +1785,13 @@ function impactTxt(h,x){
   const bits=[];
   if(x.sl[0]!==x.sl[1])bits.push(`retenues ${x.sl[0]} → ${x.sl[1]}`);
   if(x.grise[0]!==x.grise[1])bits.push(`à vérifier ${x.grise[0]} → ${x.grise[1]}`);
-  if(x.cible[0]!==x.cible[1])bits.push(`à la taille visée ${x.cible[0]} → ${x.cible[1]}`);
   return v+" : "+(bits.join(", ")||"aucun changement")+".";
 }
 const impactW=x=>x?Math.abs(x.sl[1]-x.sl[0])+Math.abs(x.grise[1]-x.grise[0])+Math.abs(x.cible[1]-x.cible[0]):-1;
 const BUCKET_N={excl:"Exclues",vert:"Secteur non retenu",geo:"Hors province",taille:"Hors taille",grise:"Taille à vérifier",croiss:"Croissance trop faible",griseC:"Croissance à vérifier",sl:"Retenues"};
 function whyLine(it,d){
   const p=d.parts,fi=p.fiab>=15?"CA vérifié":p.fiab>=10?"deux sources concordent":p.fiab>=6?"une seule source":"sources en désaccord (plus de 2x)";
-  return `${d.f.gr?d.f.gr.why+" ":""}${d.f.cible?"Taille visée par le fonds":"Plus petite que la taille visée"}; ${fi}.`;
+  return `${d.f.gr?d.f.gr.why+" ":""}CA dans la fourchette visée; ${fi}.`;
 }
 /* Les quatre filtres, en clair, avec ce que chacun retire. */
 function renderFilters4(S){
@@ -1809,7 +1801,7 @@ function renderFilters4(S){
     +card("excl","1 · Exclusions","Détenue par un fonds ou un groupe, déjà acquise, fermée, déjà en discussion ou jugée hors cible.",st.excl)
     +card("vert","2 · Secteur",`Gardés : ${vertsOn().map(vlab).join(", ")||"aucun"}.`,st.vert)
     +card("geo","3 · Province",`Gardées : ${(c.provinces||[]).join(" et ")||"aucune"}.`,st.geo)
-    +card("taille","4 · Taille",`CA de ${dec(c.addonCaMin)} à ${dec(c.caMax)} M$ et BAIIA de ${dec(c.addonEbMin)} à ${dec(c.ebMax)} M$, sur la valeur centrale estimée.`,st.taille,` · <i>${fmt(st.grise)} à vérifier</i>`)
+    +card("taille","4 · Taille",`CA estimé de ${dec(c.caMin)} à ${dec(c.caMax)} M$. En dessous : retirée. Au-dessus : gardée « à vérifier ». Le BAIIA ne retire personne.`,st.taille,` · <i>${fmt(st.grise)} à vérifier</i>`)
     +card("croiss","5 · Croissance",`Revenus de l'industrie en hausse d'au moins ${dec(c.croissMin)} % par an de 2019 à 2024${c.croissDual?", ou applications civiles et militaires":""}. Chaque refus est justifié sur sa ligne.`,st.croiss,` · <i>${fmt(st.griseC)} à vérifier</i>`)
     +`</div>`;
   $("#hypEdit").onclick=()=>$("#btnThese").click();
@@ -1878,6 +1870,17 @@ function siteHTML(it){
   if(h)return `<a class="site${est?" est":""}" href="${esc(/^https?:/i.test(it.site)?it.site:"https://"+it.site)}" target="_blank" rel="noopener" title="${est?"Site estimé, à confirmer":"Site de la société"}${it.src&&it.src.site?" · "+esc(it.src.site):""}">${est?"≈ ":""}${esc(h)} ↗</a>`;
   return `<a class="site find" href="https://www.google.com/search?q=${encodeURIComponent([it.name,it.ville].filter(Boolean).join(" "))}" target="_blank" rel="noopener" title="Aucun site enregistré : lancer une recherche">chercher ↗</a>`;
 }
+/* Propriétaire et coordonnées : ≈ si la valeur vient d'une recherche automatique, ✓ si elle est confirmée. La source est dans l'infobulle. */
+function ctHTML(it,k,kind){
+  const v=it[k];
+  if(!v)return "—";
+  const ok=it.prov&&it.prov[k]==="verifie",t=`${ok?"Confirmé":"Estimé, à confirmer"}${it.src&&it.src[k]?" · "+esc(it.src[k]):""}`;
+  const txt=`${ok?"":"≈ "}${esc(v)}${ok?" ✓":""}`;
+  if(kind==="tel")return `<a class="pv ${ok?"v":"e"}" href="tel:${esc(String(v).replace(/[^\d+]/g,""))}" title="${t}">${txt}</a>`;
+  if(kind==="mail")return `<a class="pv ${ok?"v":"e"}" href="mailto:${esc(v)}" title="${t}">${txt}</a>`;
+  return `<span class="pv ${ok?"v":"e"}" title="${t}">${txt}</span>`;
+}
+function telsHTML(it){return [it.tel&&ctHTML(it,"tel","tel"),it.cell&&ctHTML(it,"cell","tel")+` <span class="rg">cell.</span>`].filter(Boolean).join("<br>")||"—";}
 function grHTML(gr){
   const g=gr.g==null?`<span class="rg">pas de série</span>`:`<span class="pv e" title="${esc(GROWTH_SRC)}">${gr.g>0?"+":""}${dec(gr.g)} % / an</span>`;
   return g+(gr.dual?` <span class="dual" title="Applications civiles et militaires">civil + militaire</span>`:"");
@@ -1888,17 +1891,17 @@ function renderTriList(S){
   if(k==="sl")idx.sort((a,b)=>a.rank-b.rank);
   else idx.sort((a,b)=>b.d.score-a.d.score||(a.it.name||"").localeCompare(b.it.name||""));
   const MAXR=1000,fresh=k==="sl"?idx.filter(r=>r.it._u):[];
-  $("#focusbar").innerHTML=`<span><b>${esc(BUCKET_N[k])}</b> : ${fmt(idx.length)} société${idx.length>1?"s":""}${k==="sl"?`, triées par score. ${fmt(S.st.dual)} ont des applications civiles et militaires, ${fmt(S.st.cible)} ont la taille visée par le fonds.`:""}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir aux retenues</button>`:""}${fresh.length?`<span style="margin-left:auto"><button class="btn sm dark" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
+  $("#focusbar").innerHTML=`<span><b>${esc(BUCKET_N[k])}</b> : ${fmt(idx.length)} société${idx.length>1?"s":""}${k==="sl"?`, triées par score. ${fmt(S.st.dual)} ont des applications civiles et militaires.`:""}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir aux retenues</button>`:""}${fresh.length?`<span style="margin-left:auto"><button class="btn sm dark" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
   const u=$("#unfocusT");if(u)u.onclick=()=>{TFOCUS=null;renderFunnel();};
   const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(fresh.map(r=>r.it._u));
-  const cols=[["#",50],["Entreprise",240],["Site web",170],["Secteur",190],["Activité",230],["Ville",130],["Prov.",56],["Employés",84],["CA (M$)",150],["BAIIA (M$)",150],["Fondée",132],["Croissance de l'industrie",190],["Score",62],[k==="sl"?"Pourquoi elle est retenue":"Pourquoi elle est ici",560],["",120]];
+  const cols=[["#",50],["Entreprise",240],["Site web",170],["Propriétaire",190],["Téléphone",140],["Courriel",220],["Secteur",190],["Activité",230],["Ville",130],["Prov.",56],["Employés",84],["CA (M$)",150],["BAIIA (M$)",150],["Fondée",132],["Croissance de l'industrie",190],["Score",62],[k==="sl"?"Pourquoi elle est retenue":"Pourquoi elle est ici",560],["",120]];
   const width=cols.reduce((s,c)=>s+c[1],0);
   const rg=(it,d,key)=>{const s=d.sz[key];return s?`${pvHTML(s,sizeTitle(it,d.sz,key))} <span class="rg">${fmtM(s.lo)}–${fmtM(s.hi)}</span>`:"—";};
   const rows=idx.slice(0,MAXR).map(r=>{
     const it=r.it,d=r.d,f=d.f,g=r.b==="sl"?"keep":r.b==="grise"?"check":"out";
     const vp=pvOf(it,"verticale")==="verifie"?"v":"e",fp=pvOf(it,"fondation")==="verifie"?"v":"e";
     const act=it._u?(r.b==="sl"?`<button class="btn sm dark" data-promo="${esc(it.id)}">→ Radar</button>`:""):`<button class="btn sm" data-open="${esc(it.id)}" aria-label="Ouvrir la fiche de ${esc(it.name)}">Ouvrir</button>`;
-    return `<tr class="${g}"><td class="calc">${r.rank||"—"}</td><td class="calc"><b>${esc(it.name)}</b></td><td class="calc">${siteHTML(it)}</td><td class="calc"><span class="pv ${vp}" title="${vp==="v"?"Secteur vérifié":"Secteur estimé"}${it.src&&it.src.verticale?" · "+esc(it.src.verticale):""}">${vp==="v"?esc(vlab(it.verticale))+" ✓":"≈ "+esc(vlab(it.verticale))}</span></td><td class="calc" title="${esc(it.soussecteur||"")}">${esc(String(it.soussecteur||"—").replace(/^\d{4} · /,""))}</td><td class="calc">${esc(it.ville||"—")}</td><td class="calc">${esc(it.province||"—")}</td><td class="calc">${d.sz.emp?`<span class="pv ${d.sz.emp.p}">${d.sz.emp.p==="v"?esc(it.employes)+" ✓":"≈ "+esc(it.employes)}</span>`:"—"}</td><td class="calc">${rg(it,d,"ca")}</td><td class="calc">${rg(it,d,"eb")}</td><td class="calc">${d.age==null?"—":`<span class="pv ${fp}">${fp==="v"?esc(it.fondation)+" ✓":"≈ "+esc(it.fondation)}</span> <span class="rg">${d.age} ans</span>`}</td><td class="calc">${grHTML(f.gr||croissOf(it,d.sz.b))}</td><td class="calc" title="${esc(scoreTitle(d))}">${d.score}</td><td class="calc why" title="${esc(f.z==="passe"?whyLine(it,d):f.why)}">${esc(f.z==="passe"?whyLine(it,d):f.why)}</td><td><div class="act">${act}</div></td></tr>`;
+    return `<tr class="${g}"><td class="calc">${r.rank||"—"}</td><td class="calc"><b>${esc(it.name)}</b></td><td class="calc">${siteHTML(it)}</td><td class="calc">${ctHTML(it,"proprio")}</td><td class="calc">${telsHTML(it)}</td><td class="calc">${ctHTML(it,"courriel","mail")}</td><td class="calc"><span class="pv ${vp}" title="${vp==="v"?"Secteur vérifié":"Secteur estimé"}${it.src&&it.src.verticale?" · "+esc(it.src.verticale):""}">${vp==="v"?esc(vlab(it.verticale))+" ✓":"≈ "+esc(vlab(it.verticale))}</span></td><td class="calc" title="${esc(it.soussecteur||"")}">${esc(String(it.soussecteur||"—").replace(/^\d{4} · /,""))}</td><td class="calc">${esc(it.ville||"—")}</td><td class="calc">${esc(it.province||"—")}</td><td class="calc">${d.sz.emp?`<span class="pv ${d.sz.emp.p}">${d.sz.emp.p==="v"?esc(it.employes)+" ✓":"≈ "+esc(it.employes)}</span>`:"—"}</td><td class="calc">${rg(it,d,"ca")}</td><td class="calc">${rg(it,d,"eb")}</td><td class="calc">${d.age==null?"—":`<span class="pv ${fp}">${fp==="v"?esc(it.fondation)+" ✓":"≈ "+esc(it.fondation)}</span> <span class="rg">${d.age} ans</span>`}</td><td class="calc">${grHTML(f.gr||croissOf(it,d.sz.b))}</td><td class="calc" title="${esc(scoreTitle(d))}">${d.score}</td><td class="calc why" title="${esc(f.z==="passe"?whyLine(it,d):f.why)}">${esc(f.z==="passe"?whyLine(it,d):f.why)}</td><td><div class="act">${act}</div></td></tr>`;
   }).join("");
   host.innerHTML=`<div class="sheet-wrap" style="--stick:0px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map(c=>`<th style="top:0">${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
   $$("[data-promo]",host).forEach(b=>b.onclick=()=>{const r=S.rows.find(x=>x.it.id===b.dataset.promo);if(r)promote([r.it._u]);});
@@ -1947,12 +1950,12 @@ window.basaltExport=function(){
   const S=shortlist(),m=hypImpacts();
   return {
     date:new Date().toISOString(),year:YEAR,cfg:CFG,disp:BENCH_DISP,agroRef:AGRO_REF,stats:S.st,scoreTxt:SCORE_TXT,
-    verts:THESE_VERTS.map(v=>({v,label:vlab(v),on:vertsOn().includes(v),floor:ebFloor({verticale:v})})),
+    verts:THESE_VERTS.map(v=>({v,label:vlab(v),on:vertsOn().includes(v)})),
     hyp:HYP.map(h=>({id:hypId(h),k:h.k,sec:h.sec,n:h.n,u:h.u,v:hypGet(CFG,h.k),alt:h.alt==null?null:h.alt,bool:!!h.bool,src:hypSrc(h),conf:hypConf(h),impact:impactTxt(h,m.get(h.k)),w:impactW(m.get(h.k))})),
     bench:BENCH.map(b=>({...b,mc:margeC(b),n:S.rows.filter(r=>r.d.sz.b&&r.d.sz.b.id===b.id).length})),
     rows:S.rows.map(r=>{
       const it=r.it,d=r.d,sz=d.sz,g=x=>x?{lo:x.lo,mid:x.mid,hi:x.hi,p:x.p}:null;
-      return {id:it.id,name:it.name,verticale:it.verticale,vp:pvOf(it,"verticale")==="verifie"?"v":"e",sous:it.soussecteur||"",ville:it.ville||"",province:it.province||"",canal:it.canal||"",stage:it.stage||"",site:it.site||"",
+      return {id:it.id,name:it.name,verticale:it.verticale,vp:pvOf(it,"verticale")==="verifie"?"v":"e",sous:it.soussecteur||"",ville:it.ville||"",province:it.province||"",canal:it.canal||"",stage:it.stage||"",site:it.site||"",proprio:it.proprio||"",tel:it.tel||"",cell:it.cell||"",courriel:it.courriel||"",
         exclusion:it.exclusion||"",bench:sz.b?sz.b.id:"",emp:sz.emp?g(sz.emp):null,empTxt:it.employes==null?"":String(it.employes),caIn:rng(it.ca),caV:pvOf(it,"ca")==="verifie",ebIn:rng(it.baiia),ebV:pvOf(it,"baiia")==="verifie",
         fondation:num(it.fondation),age:d.age,ageFond:num(it.ageFond),raison:it.raison||"",fit:it.fit||"",
         ca:g(sz.ca),eb:g(sz.eb),ve:g(sz.ve),gap:sz.ca&&sz.ca.gap||1,
@@ -2269,7 +2272,7 @@ window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(TABS
 let rsz=null;window.addEventListener("resize",()=>{clearTimeout(rsz);rsz=setTimeout(()=>{if(TAB==="entonnoir")renderFunnel();$$(".sheet-scroll").forEach(updateFades);},150);});
 
 /* ---------- fiche (modal foncé) ---------- */
-const T_FIELDS=["priorite","role","ageFond","name","suffix","stage","ref","neq","site","verticale","soussecteur","canal","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","transaction","raison","mix","recurrence","fit","exclusion","bridge","owner","flags","contactName","contactEmail","sendDate","channel","sendStatus","followup","slide","badgeOrigine","dateAdded","notes","raw"];
+const T_FIELDS=["priorite","role","ageFond","name","suffix","stage","ref","neq","site","verticale","soussecteur","canal","ville","province","region","fondation","employes","ca","baiia","confTaille","prix","transaction","raison","mix","recurrence","fit","exclusion","bridge","owner","flags","proprio","tel","cell","courriel","contactName","contactEmail","sendDate","channel","sendStatus","followup","slide","badgeOrigine","dateAdded","notes","raw"];
 function fillSelect(id,opts,blank){$("#"+id).innerHTML=(blank?`<option value="">—</option>`:"")+opts.map(o=>typeof o==="string"?`<option value="${esc(o)}">${esc(o)}</option>`:`<option value="${esc(o.v)}">${esc(o.n)}</option>`).join("");}
 fillSelect("t-stage",STAGES.map(s=>({v:s.id,n:s.n})));
 fillSelect("t-verticale",VERTICALES.map(v=>({v,n:vlab(v)})));fillSelect("t-canal",CANAL_NAMES,true);fillSelect("t-province",PROVINCES,true);
@@ -2555,7 +2558,8 @@ Retourne UNIQUEMENT un tableau JSON, un objet par entreprise ou annonce distinct
 - "transaction" : une valeur parmi ${JSON.stringify(TRANSACTIONS)} ou "".
 - "mix" : une valeur parmi ${JSON.stringify(MIX)} ou "".
 - "recurrence" : une valeur parmi ${JSON.stringify(RECUR)} ou "" (contrats de service, consommables, pièces).
-- "contactName", "contactEmail" : seulement s'ils sont écrits dans le texte (conseiller, courtier ou dirigeant), sinon "".
+- "proprio" (nom et titre du propriétaire ou du dirigeant), "tel", "cell", "courriel" : seulement s'ils sont écrits dans le texte, sinon "".
+- "contactName", "contactEmail" : un autre contact (conseiller, courtier), seulement s'il est écrit dans le texte, sinon "".
 - "owner" : ce que le texte dit de la propriété et de la relève, sinon "".
 - "flags" : tableau des red flags explicites dans le texte (dépendance à un client, B2C, dettes, etc.), sinon [].
 - "notes" : une phrase qui résume l'annonce.
