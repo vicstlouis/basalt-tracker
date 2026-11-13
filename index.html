@@ -521,7 +521,7 @@ body.locked>:not(#ovLogin):not(.toast){visibility:hidden}
   <!-- ENTONNOIR -->
   <section class="panel" id="panel-entonnoir">
     <div class="ptool">
-      <div class="intro"><b>Le tri brutal.</b> Importe des centaines ou des milliers de profils d'entreprises (REQ, ICRIQ, listes Excel). Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. Ce qui reste à la fin est ta shortlist, à envoyer au Radar.</div>
+      <div class="intro"><b>Le tri brutal.</b> Toutes les cibles du tracker passent dans l'entonnoir, plus les profils importés (REQ, ICRIQ, listes Excel) qui n'y sont pas encore. Chaque étape retire celles qui échouent un critère, dans l'ordre que tu choisis. CA et BAIIA : la valeur vérifiée, sinon l'estimé du tracker (≈). Ce qui reste à la fin est ta shortlist.</div>
       <div class="right"><button class="btn dark" id="btnUniv">+ Importer des profils</button></div>
     </div>
     <div class="ingest" id="univBox" hidden>
@@ -1650,10 +1650,28 @@ const DEFAULT_STEPS=[
   {field:"multiple",label:"Trop chère",min:null,max:7,unknown:"keep",on:true},
 ];
 let TRI={steps:DEFAULT_STEPS.map(s=>({...s}))};
-let UNIV=new Map(),UROWS=[],TFOCUS=null,TRES=null;
+let UNIV=new Map(),UROWS=[],TROWS=[],TFOCUS=null,TRES=null;
 const fmt=n=>Number(n||0).toLocaleString("fr-CA");
 
+/* Population de l'entonnoir : toutes les cibles du tracker, plus les profils importés qui n'y sont pas encore (même nom).
+   Pour une cible, CA et BAIIA sont les fourchettes du tracker : la valeur vérifiée, sinon l'estimé (≈). */
+function funnelRows(){
+  const rows=[],seen=new Set();
+  all().forEach(it=>{
+    const sz=D(it).sz,nn=normName(it.name);if(nn)seen.add(nn);
+    rows.push({n:it.name,neq:it.neq,v:it.ville,p:it.province,r:it.region,s:it.soussecteur,vt:it.verticale,f:it.fondation,e:it.employes,px:it.prix,ad:it.ageFond,x:it.exclusion||"",site:it.site,
+      ca:sz.ca,eb:sz.eb,_sz:true,_est:{ca:!!sz.ca&&sz.ca.p!=="v",baiia:!!sz.eb&&sz.eb.p!=="v",multiple:!!sz.eb&&sz.eb.p!=="v"},
+      _cid:it.id,_stage:it.stage,_lot:"Tracker · "+(it.canal||"sans canal")});
+  });
+  UROWS.forEach(p=>{if(!seen.has(normName(p.n)))rows.push(p);});
+  return rows;
+}
 function triVal(p,f){
+  if(p._sz&&(f==="ca"||f==="baiia"||f==="multiple")){
+    if(f==="ca")return p.ca||null;
+    if(f==="baiia")return p.eb||null;
+    const px=num(p.px);return px!=null&&p.eb&&p.eb.mid>0?px/p.eb.mid:null;
+  }
   switch(f){
     case "verticale":return p.vt&&p.vt!=="À classer"?p.vt:null;
     case "province":return p.p||null;
@@ -1681,24 +1699,25 @@ function stepTest(s,p){
 }
 function runTri(){
   const steps=TRI.steps.filter(s=>s.on&&TRI_FIELDS[s.field]);
-  const N=UROWS.length;
+  TROWS=funnelRows();
+  const N=TROWS.length;
   const st=steps.map(()=>({okok:0,okunk:0,unkunk:0,okout:0,unkout:0,unkdrop:0}));
   const fate=new Array(N);
   for(let i=0;i<N;i++){
-    const p=UROWS[i];let state="ok";const miss=[];let done=false;
+    const p=TROWS[i];let state="ok";const miss=[],est=[];let done=false;
     for(let j=0;j<steps.length;j++){
       const r=stepTest(steps[j],p),S=st[j];
-      if(r===true){state==="ok"?S.okok++:S.unkunk++;continue;}
+      if(r===true){state==="ok"?S.okok++:S.unkunk++;if(p._est&&p._est[steps[j].field])est.push(steps[j].field);continue;}
       if(r===null&&steps[j].unknown!=="drop"){miss.push(steps[j].field);if(state==="ok"){S.okunk++;state="unk";}else S.unkunk++;continue;}
       state==="ok"?S.okout++:S.unkout++;
       if(r===null)S.unkdrop++;
-      fate[i]={out:j,why:r===null?"unk":"fail",state,miss};done=true;break;
+      fate[i]={out:j,why:r===null?"unk":"fail",state,miss,est};done=true;break;
     }
-    if(!done)fate[i]={out:-1,state,miss};
+    if(!done)fate[i]={out:-1,state,miss,est};
   }
   const cols=[{ok:N,unk:0,out:0}];
   st.forEach(S=>cols.push({ok:S.okok,unk:S.okunk+S.unkunk,out:S.okout+S.unkout}));
-  return {steps,st,cols,fate,N};
+  return {steps,st,cols,fate,N,rows:TROWS};
 }
 function trackerNames(){return new Set(all().map(it=>normName(it.name)).filter(n=>n.length>2));}
 function wrapLabel(s,max){
@@ -1711,7 +1730,7 @@ function wrapLabel(s,max){
 /* Sankey d'attrition : le tronc rétrécit, chaque étape détache ses éliminées */
 function renderTriSankey(R){
   const host=$("#sankey"),tip=$("#skTip");
-  $("#skLegend").innerHTML=[["var(--keep)","Confirmées sur les critères"],["var(--check)","Passent sans donnée"],["var(--out)","Éliminées"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique une colonne ou une coupe pour voir ses entreprises.</span>`;
+  $("#skLegend").innerHTML=[["var(--keep)","Passent sur les critères (données ou estimés ≈)"],["var(--check)","Passent sans donnée"],["var(--out)","Éliminées"]].map(([c,n])=>`<span><span class="sw" style="background:${c}"></span>${n}</span>`).join("")+`<span class="hint">Clique une colonne ou une coupe pour voir ses entreprises.</span>`;
   if(!R.N){host.innerHTML=`<div class="empty">Aucun profil importé. Utilise « + Importer des profils ».</div>`;return;}
   const S=R.steps.length;
   const avail=host.parentElement.clientWidth||1100;
@@ -1780,7 +1799,8 @@ function renderTriSankey(R){
 function triInsights(R){
   if(!R.N)return [];
   const out=[],S=R.steps.length,last=R.cols[S];
-  out.push({g:"keep",t:`Shortlist : <b>${fmt(last.ok+last.unk)}</b> profils sur ${fmt(R.N)} (${pct(last.ok+last.unk,R.N)}), dont ${fmt(last.ok)} confirmés sur tous les critères.`});
+  const okEst=R.fate.filter(f=>f.out===-1&&f.state==="ok"&&f.est&&f.est.length).length;
+  out.push({g:"keep",t:`Shortlist : <b>${fmt(last.ok+last.unk)}</b> profils sur ${fmt(R.N)} (${pct(last.ok+last.unk,R.N)}). ${fmt(last.ok)} passent tous les critères${okEst?`, dont ${fmt(okEst)} grâce à des estimés (≈) à vérifier`:""}.`});
   if(S){
     let bi=0;R.st.forEach((x,j)=>{if(x.okout+x.unkout>R.st[bi].okout+R.st[bi].unkout)bi=j;});
     const n=R.st[bi].okout+R.st[bi].unkout,inN=R.cols[bi].ok+R.cols[bi].unk;
@@ -1838,35 +1858,49 @@ $("#steps").addEventListener("click",e=>{
 });
 function statusHTML(f,R){
   if(f.out>=0)return `<span class="vchip out"><i aria-hidden="true">✕</i>${esc(R.steps[f.out].label)}${f.why==="unk"?" (sans donnée)":""}</span>`;
+  if(f.state==="ok"&&f.est&&f.est.length)return `<span class="vchip keep" title="Passe grâce à des valeurs estimées : à vérifier"><i aria-hidden="true">✓</i>Passe sur estimés ≈ : ${esc(f.est.map(m=>TRI_FIELDS[m].label).join(", "))}</span>`;
   if(f.state==="ok")return `<span class="vchip keep"><i aria-hidden="true">✓</i>Confirmée</span>`;
   return `<span class="vchip check" title="Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}"><i aria-hidden="true">?</i>Sans donnée : ${esc(f.miss.map(m=>TRI_FIELDS[m].label).join(", "))}</span>`;
 }
 function renderTriList(R){
+  const TR=R.rows||[];
   const host=$("#triList"),S=R.steps.length;
   if(!R.N){host.innerHTML="";$("#focusbar").innerHTML="";return;}
   const f=TFOCUS||{type:"trunk",c:S};
   const idx=[];
   R.fate.forEach((x,i)=>{if(f.type==="trunk"?(x.out===-1||x.out>=f.c):x.out===f.c-1)idx.push(i);});
-  idx.sort((a,b)=>{const fa=R.fate[a],fb=R.fate[b];const ra=fa.out===-1?(fa.state==="ok"?0:1):2,rb=fb.out===-1?(fb.state==="ok"?0:1):2;if(ra!==rb)return ra-rb;return (triVal(UROWS[b],"ageEnt")||-1)-(triVal(UROWS[a],"ageEnt")||-1);});
+  const rank=x=>x.out===-1?(x.state==="ok"?(x.est&&x.est.length?1:0):2):3;
+  idx.sort((a,b)=>{const ra=rank(R.fate[a]),rb=rank(R.fate[b]);if(ra!==rb)return ra-rb;return (triVal(TR[b],"ageEnt")||-1)-(triVal(TR[a],"ageEnt")||-1);});
   const lab=f.c===0?"Univers":R.steps[f.c-1].label;
   const title=f.type==="cut"?`Éliminées par <b>${esc(lab)}</b> : ${fmt(idx.length)}`:f.c===S?`<b>Shortlist</b> : ${fmt(idx.length)} profils`:`Restantes après <b>${esc(lab)}</b> : ${fmt(idx.length)}`;
   const finalTrunk=f.type==="trunk"&&f.c===S;
-  const nConf=finalTrunk?idx.filter(i=>R.fate[i].state==="ok").length:0;
-  $("#focusbar").innerHTML=`<span>${title}${idx.length>300?" · 300 premières affichées":""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir à la shortlist</button>`:""}${finalTrunk&&idx.length?`<span style="margin-left:auto;display:flex;gap:8px"><button class="btn sm dark" id="promoConf"${nConf?"":" disabled"}>Envoyer les ${fmt(nConf)} confirmées au Radar</button><button class="btn sm" id="promoAll">Envoyer les ${fmt(idx.length)} au Radar</button></span>`:""}`;
+  /* seuls les profils importés qui ne sont pas encore au tracker peuvent être envoyés au Radar */
+  const fresh=finalTrunk?idx.filter(i=>!TR[i]._cid):[];
+  const nConf=fresh.filter(i=>R.fate[i].state==="ok").length;
+  const MAXR=1000;
+  $("#focusbar").innerHTML=`<span>${title}${idx.length>MAXR?` · ${fmt(MAXR)} premières affichées`:""}</span>${TFOCUS?`<button class="btn sm" id="unfocusT">Revenir à la shortlist</button>`:""}${fresh.length?`<span style="margin-left:auto;display:flex;gap:8px"><button class="btn sm dark" id="promoConf"${nConf?"":" disabled"}>Envoyer les ${fmt(nConf)} profils importés confirmés au Radar</button><button class="btn sm" id="promoAll">Envoyer les ${fmt(fresh.length)} profils importés au Radar</button></span>`:""}`;
   const u=$("#unfocusT");if(u)u.onclick=()=>{TFOCUS=null;renderFunnel();};
-  const pc=$("#promoConf");if(pc)pc.onclick=()=>promote(idx.filter(i=>R.fate[i].state==="ok").map(i=>UROWS[i]));
-  const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(idx.map(i=>UROWS[i]));
+  const pc=$("#promoConf");if(pc)pc.onclick=()=>promote(fresh.filter(i=>R.fate[i].state==="ok").map(i=>TR[i]));
+  const pa=$("#promoAll");if(pa)pa.onclick=()=>promote(fresh.map(i=>TR[i]));
   const names=trackerNames();
-  const cols=[["Entreprise",240],["Verticale",104],["Ville",140],["Prov.",62],["Fondée",70],["Âge",66],["Âge fond.",80],["Employés",88],["CA (M$)",80],["BAIIA (M$)",88],["Prix (M$)",80],["Statut",320],["Lot",190],["",112]];
+  const stageN=Object.fromEntries(STAGES.map(s=>[s.id,s.n]));
+  const cols=[["Entreprise",240],["Verticale",150],["Ville",140],["Prov.",62],["Fondée",70],["Âge",66],["Âge fond.",80],["Employés",88],["CA (M$)",84],["BAIIA (M$)",92],["Prix (M$)",80],["Statut",330],["Source",170],["",150]];
   const width=cols.reduce((s,c)=>s+c[1],0);
-  const rows=idx.slice(0,300).map(i=>{
-    const p=UROWS[i],fa=R.fate[i],age=triVal(p,"ageEnt");
-    const inT=names.has(normName(p.n));
+  const sizeCell=(p,k)=>{
+    if(!p._sz)return esc((k==="ca"?p.ca:p.eb)||"—");
+    const it=items.get(p._cid),s=k==="ca"?p.ca:p.eb;
+    return it?pvHTML(s,sizeTitle(it,D(it).sz,k==="ca"?"ca":"eb")):"—";
+  };
+  const rows=idx.slice(0,MAXR).map(i=>{
+    const p=TR[i],fa=R.fate[i],age=triVal(p,"ageEnt");
     const g=fa.out>=0?"out":fa.state==="ok"?"keep":"check";
-    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(vlab(p.vt)||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${esc(p.ca||"—")}</td><td class="calc">${esc(p.eb||"—")}</td><td class="calc">${p.px==null||p.px===""?"—":esc(p.px)}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${inT?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:""}</div></td></tr>`;
+    const act=p._cid?`<span style="font-size:11px;color:var(--ink-3)">${esc(stageN[p._stage]||"Tracker")}</span><button class="btn sm" data-open="${esc(p._cid)}" aria-label="Ouvrir la fiche de ${esc(p.n)}">Ouvrir</button>`
+      :names.has(normName(p.n))?`<span style="font-size:11px;color:var(--ink-3)">Au tracker</span>`:fa.out===-1?`<button class="btn sm dark" data-promo="${i}">→ Radar</button>`:"";
+    return `<tr class="${g}"><td class="stk s1" style="left:0"><div class="nm"><span class="cell" style="line-height:33px;overflow:hidden;text-overflow:ellipsis">${esc(p.n)}</span></div></td><td class="calc">${esc(vlab(p.vt)||"—")}</td><td class="calc">${esc(p.v||"—")}</td><td class="calc">${esc(p.p||"—")}</td><td class="calc">${p.f||"—"}</td><td class="calc">${age==null?"—":age+" ans"}</td><td class="calc">${p.ad==null||p.ad===""?"—":esc(p.ad)}</td><td class="calc">${esc(p.e||"—")}</td><td class="calc">${sizeCell(p,"ca")}</td><td class="calc">${sizeCell(p,"eb")}</td><td class="calc">${p.px==null||p.px===""?"—":esc(p.px)}</td><td class="calc">${statusHTML(fa,R)}</td><td class="calc" title="${esc(p._lot)}">${esc(p._lot)}</td><td><div class="act">${act}</div></td></tr>`;
   }).join("");
   host.innerHTML=`<div class="sheet-wrap" style="--stick:240px"><div class="sheet-scroll"><table class="sheet" style="width:${width}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join("")}</colgroup><thead><tr class="c" style="--top:0">${cols.map((c,i)=>`<th${i===0?' class="stk" style="left:0;top:0"':' style="top:0"'}>${esc(c[0])}</th>`).join("")}</tr></thead><tbody>${rows||`<tr><td colspan="${cols.length}" class="empty">Aucune entreprise ici.</td></tr>`}</tbody></table></div><div class="fb"></div></div>`;
-  $$("[data-promo]",host).forEach(b=>b.onclick=()=>promote([UROWS[+b.dataset.promo]]));
+  $$("[data-promo]",host).forEach(b=>b.onclick=()=>promote([TR[+b.dataset.promo]]));
+  $$("[data-open]",host).forEach(b=>b.onclick=()=>openTicket(b.dataset.open));
   updateFades($(".sheet-scroll",host));
 }
 async function promote(list){
@@ -2051,10 +2085,10 @@ $("#univFile").addEventListener("change",async e=>{
 function renderStats(){
   const c=st=>inStage(st).length;
   const radarKeep=inStage("radar").filter(it=>D(it).group==="keep").length;
-  const R=UROWS.length?runTri():null;
+  const R=(items.size||UROWS.length)?runTri():null;
   const short=R?R.cols[R.cols.length-1]:null;
   const tiles=[
-    {n:"Univers",v:fmt(UROWS.length),s:R?fmt(short.ok+short.unk)+" en shortlist après le tri":"profils importés"},
+    {n:"Univers",v:fmt(R?R.N:0),s:R?fmt(short.ok+short.unk)+" en shortlist après le tri":"cibles et profils importés"},
     {n:"Radar",v:c("radar"),s:radarKeep+" retenue"+(radarKeep>1?"s":"")+" par les filtres"},
     {n:"Backlog",v:c("backlog"),s:"à contacter"},
     {n:"Envois",v:c("envoye"),t:50},
